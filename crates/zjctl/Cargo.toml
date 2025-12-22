@@ -1,0 +1,18 @@
+[package]
+name = "zjctl"
+description = "Missing CLI surface for Zellij - pane-addressed operations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "zjctl"
+path = "src/main.rs"
+
+[dependencies]
+zjctl-proto.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+thiserror.workspace = true

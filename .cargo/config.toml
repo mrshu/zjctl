@@ -1,0 +1,5 @@
+# Build configuration for zjctl
+
+[build]
+# Target for the zrpc plugin - use wasm32-wasip1 for WASI
+# Run with: cargo build -p zrpc --target wasm32-wasip1 --release
