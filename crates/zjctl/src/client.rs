@@ -124,14 +124,12 @@ pub fn call(request: &RpcRequest, plugin_path: Option<&str>) -> Result<RpcRespon
         });
     }
 
-    for line in stdout.lines() {
-        if line.trim().is_empty() {
-            continue;
-        }
-        if let Ok(resp) = serde_json::from_str::<RpcResponse>(line) {
-            if resp.id == request.id {
-                return Ok(resp);
-            }
+    for resp in serde_json::Deserializer::from_str(&stdout)
+        .into_iter::<RpcResponse>()
+        .flatten()
+    {
+        if resp.id == request.id {
+            return Ok(resp);
         }
     }
 
