@@ -4,17 +4,16 @@ Programmatic Zellij automation for humans, scripts, and agents alike.
 
 This crate provides the `zjctl` binary.
 
-## Installation (cargo)
+## Installation
+
+### Quick install (recommended)
 
 ```bash
-# Install CLI
 cargo install zjctl
-
-# Install plugin (WASM)
-rustup target add wasm32-wasip1
-cargo install zjctl-zrpc --target wasm32-wasip1 --root ~/.local
-mkdir -p ~/.config/zellij/plugins
-cp ~/.local/bin/zrpc.wasm ~/.config/zellij/plugins/zrpc.wasm
+zjctl install --load
 ```
 
-See the repository README for full usage and setup details.
+### Manual install
+
+See the repository [README](https://github.com/mrshu/zjctl#readme) for full usage
+and manual setup details.

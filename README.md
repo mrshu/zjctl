@@ -34,74 +34,45 @@ zjctl pane close --pane "$pane"
 
 Requires Zellij 0.43+.
 
-### Cargo (crates.io)
+### Quick install (recommended)
 
 ```bash
-# Install CLI
 cargo install zjctl
-
-# Install plugin (WASM)
-rustup target add wasm32-wasip1
-cargo install zjctl-zrpc --target wasm32-wasip1 --root ~/.local
-mkdir -p ~/.config/zellij/plugins
-cp ~/.local/bin/zrpc.wasm ~/.config/zellij/plugins/zrpc.wasm
-```
-
-### Recommended installer
-
-```bash
-# Install plugin and add to config.kdl for auto-load (default)
-zjctl install
-
-# Also load it into the current session right now
 zjctl install --load
-
-# Skip config.kdl changes (one-off install)
-zjctl install --no-auto-load
-
-# Show what would be executed
-zjctl install --print
-
-# Re-download even if the file exists
-zjctl install --force
 ```
 
-The installer uses your platform config dir (XDG, APPDATA, or ~/.config),
-and respects `ZELLIJ_CONFIG_FILE` or `ZELLIJ_CONFIG_DIR` when set.
+`zjctl install` downloads the plugin, updates `config.kdl`, and can load it in
+the current session.
 
-### CLI
+### Manual install
 
 ```bash
+# Download CLI binary
 curl -L https://github.com/mrshu/zjctl/releases/latest/download/zjctl-x86_64-linux.tar.gz | \
   tar -xz -C ~/.local/bin/
 ```
 
-### Plugin
-
 ```bash
+# Download plugin binary
 mkdir -p ~/.config/zellij/plugins
 curl -L https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm \
   -o ~/.config/zellij/plugins/zrpc.wasm
 ```
 
-### Load the plugin
-
-In your Zellij session:
-
 ```bash
+# Load the plugin in the current session
 zellij action launch-plugin "file:~/.config/zellij/plugins/zrpc.wasm"
 ```
 
-Accept the permissions when prompted. The plugin runs as a background service.
-
-To auto-load on startup, add to `~/.config/zellij/config.kdl` (this is the
-default for `zjctl install`, disable with `--no-auto-load`):
+To auto-load on startup, add to `~/.config/zellij/config.kdl`:
 
 ```kdl
 load_plugins {
     "file:~/.config/zellij/plugins/zrpc.wasm"
 }
 ```
+
+Accept the permissions when prompted. The plugin runs as a background service.
 
 Verify setup:
 
@@ -110,7 +81,7 @@ zjctl doctor
 zjctl doctor --json
 ```
 
-### From source
+### From source (optional)
 
 ```bash
 # Prerequisites
@@ -123,6 +94,15 @@ cp target/release/zjctl ~/.local/bin/
 # Build and install plugin
 cargo build --release -p zjctl-zrpc --target wasm32-wasip1
 cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
+```
+
+If you prefer crates.io for the plugin:
+
+```bash
+rustup target add wasm32-wasip1
+cargo install zjctl-zrpc --target wasm32-wasip1 --root ~/.local
+mkdir -p ~/.config/zellij/plugins
+cp ~/.local/bin/zrpc.wasm ~/.config/zellij/plugins/zrpc.wasm
 ```
 
 ## Usage guide
