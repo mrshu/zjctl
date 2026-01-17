@@ -38,7 +38,11 @@ enum Commands {
         args: Vec<String>,
     },
     /// Run setup checks for zjctl + zrpc
-    Doctor,
+    Doctor {
+        /// Output diagnostics as JSON
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -115,8 +119,8 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         Commands::Action { args } => {
             commands::action::run(&args)?;
         }
-        Commands::Doctor => {
-            commands::doctor::run(plugin)?;
+        Commands::Doctor { json } => {
+            commands::doctor::run(plugin, json)?;
         }
         Commands::Panes { cmd } => match cmd {
             PanesCommands::Ls { json } => {
