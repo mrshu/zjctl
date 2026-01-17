@@ -31,6 +31,12 @@ enum Commands {
         #[command(subcommand)]
         cmd: PaneCommands,
     },
+    /// Show focused pane and tab status
+    Status {
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Pass-through to zellij action
     Action {
         /// Arguments to pass to zellij action
@@ -87,6 +93,54 @@ enum PaneCommands {
         #[arg(long)]
         pane: String,
     },
+    /// Send Ctrl+C to a pane
+    Interrupt {
+        /// Pane selector
+        #[arg(long)]
+        pane: String,
+        /// Send to all matching panes
+        #[arg(long)]
+        all: bool,
+    },
+    /// Send Escape to a pane
+    Escape {
+        /// Pane selector
+        #[arg(long)]
+        pane: String,
+        /// Send to all matching panes
+        #[arg(long)]
+        all: bool,
+    },
+    /// Capture pane output to stdout
+    Capture {
+        /// Pane selector
+        #[arg(long)]
+        pane: String,
+        /// Include scrollback
+        #[arg(long)]
+        full: bool,
+        /// Keep focus on captured pane
+        #[arg(long)]
+        no_restore: bool,
+    },
+    /// Wait for pane output to stop changing
+    WaitIdle {
+        /// Pane selector
+        #[arg(long)]
+        pane: String,
+        /// Idle time in seconds
+        #[arg(long, default_value = "2.0")]
+        idle_time: f64,
+        /// Timeout in seconds
+        #[arg(long, default_value = "30.0")]
+        timeout: f64,
+        /// Include scrollback in checks
+        #[arg(long)]
+        full: bool,
+        /// Keep focus on pane after waiting
+        #[arg(long)]
+        no_restore: bool,
+    },
     /// Rename a pane
     Rename {
         /// Pane selector
@@ -141,6 +195,9 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         } => {
             commands::install::run(plugin, print, force, load)?;
         }
+        Commands::Status { json } => {
+            commands::status::run(plugin, json)?;
+        }
         Commands::Panes { cmd } => match cmd {
             PanesCommands::Ls { json } => {
                 commands::panes::ls(plugin, json)?;
@@ -152,6 +209,28 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             }
             PaneCommands::Focus { pane } => {
                 commands::pane::focus(plugin, &pane)?;
+            }
+            PaneCommands::Interrupt { pane, all } => {
+                commands::pane::interrupt(plugin, &pane, all)?;
+            }
+            PaneCommands::Escape { pane, all } => {
+                commands::pane::escape(plugin, &pane, all)?;
+            }
+            PaneCommands::Capture {
+                pane,
+                full,
+                no_restore,
+            } => {
+                commands::pane::capture(plugin, &pane, full, no_restore)?;
+            }
+            PaneCommands::WaitIdle {
+                pane,
+                idle_time,
+                timeout,
+                full,
+                no_restore,
+            } => {
+                commands::pane::wait_idle(plugin, &pane, idle_time, timeout, full, no_restore)?;
             }
             PaneCommands::Rename { pane, name } => {
                 commands::pane::rename(plugin, &pane, &name)?;

@@ -147,6 +147,10 @@ zjctl install --load
 zjctl doctor
 zjctl doctor --json
 
+# Show focused pane status
+zjctl status
+zjctl status --json
+
 # Install the plugin
 zjctl install
 zjctl install --load
@@ -158,6 +162,17 @@ zjctl panes ls --json
 # Send input to a pane
 zjctl pane send --pane id:terminal:3 -- "ls -la\n"
 zjctl pane send --pane title:vim -- ":w\n"
+
+# Capture pane output
+zjctl pane capture --pane focused
+zjctl pane capture --pane focused --full
+
+# Wait for pane to become idle
+zjctl pane wait-idle --pane focused --idle-time 3 --timeout 60
+
+# Send interrupt / escape
+zjctl pane interrupt --pane cmd:cargo
+zjctl pane escape --pane title:vim
 
 # Focus a pane
 zjctl pane focus --pane focused
