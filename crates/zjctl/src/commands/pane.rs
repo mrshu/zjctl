@@ -179,6 +179,46 @@ pub fn resize(
     Ok(())
 }
 
+pub fn launch(
+    plugin: Option<&str>,
+    direction: Option<&str>,
+    floating: bool,
+    name: Option<&str>,
+    cwd: Option<&str>,
+    close_on_exit: bool,
+    in_place: bool,
+    start_suspended: bool,
+    command: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let before = panes::list(plugin)?;
+
+    run_new_pane_action(
+        direction,
+        floating,
+        name,
+        cwd,
+        close_on_exit,
+        in_place,
+        start_suspended,
+        command,
+    )?;
+
+    let after = panes::list(plugin)?;
+    let pane = find_new_pane(&before, &after).map_err(|err| {
+        format!(
+            "unable to identify new pane ({err}); run `zjctl panes ls` to inspect"
+        )
+    })?;
+
+    if let Some(selector) = pane_id_to_selector(&pane.id) {
+        println!("{selector}");
+    } else {
+        println!("{}", pane.id);
+    }
+
+    Ok(())
+}
+
 fn send_raw(
     plugin: Option<&str>,
     selector: &str,
@@ -193,6 +233,69 @@ fn send_raw(
 
     client::rpc_call(plugin, methods::PANE_SEND, params)?;
     Ok(())
+}
+
+fn run_new_pane_action(
+    direction: Option<&str>,
+    floating: bool,
+    name: Option<&str>,
+    cwd: Option<&str>,
+    close_on_exit: bool,
+    in_place: bool,
+    start_suspended: bool,
+    command: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::new("zellij");
+    cmd.args(["action", "new-pane"]);
+
+    if let Some(direction) = direction {
+        cmd.args(["--direction", direction]);
+    }
+    if floating {
+        cmd.arg("--floating");
+    }
+    if let Some(name) = name {
+        cmd.args(["--name", name]);
+    }
+    if let Some(cwd) = cwd {
+        cmd.args(["--cwd", cwd]);
+    }
+    if close_on_exit {
+        cmd.arg("--close-on-exit");
+    }
+    if in_place {
+        cmd.arg("--in-place");
+    }
+    if start_suspended {
+        cmd.arg("--start-suspended");
+    }
+    if !command.is_empty() {
+        cmd.arg("--").args(command);
+    }
+
+    let status = cmd.status().map_err(|err| format!("failed to run zellij: {err}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("zellij action new-pane failed: {status:?}").into())
+    }
+}
+
+fn find_new_pane(
+    before: &[panes::PaneInfo],
+    after: &[panes::PaneInfo],
+) -> Result<panes::PaneInfo, String> {
+    let mut new_panes: Vec<panes::PaneInfo> = after
+        .iter()
+        .filter(|pane| !before.iter().any(|old| old.id == pane.id))
+        .cloned()
+        .collect();
+
+    match new_panes.len() {
+        1 => Ok(new_panes.remove(0)),
+        0 => Err("no new panes detected".to_string()),
+        count => Err(format!("{count} new panes detected")),
+    }
 }
 
 struct Selection {
@@ -293,6 +396,20 @@ fn poll_interval(idle_time: f64) -> Duration {
 mod tests {
     use super::*;
 
+    fn pane(id: &str) -> panes::PaneInfo {
+        panes::PaneInfo {
+            id: id.to_string(),
+            pane_type: "terminal".to_string(),
+            title: String::new(),
+            command: None,
+            tab_index: 0,
+            tab_name: "tab".to_string(),
+            focused: false,
+            floating: false,
+            suppressed: false,
+        }
+    }
+
     #[test]
     fn pane_id_to_selector_parses_terminal() {
         assert_eq!(
@@ -320,5 +437,32 @@ mod tests {
     fn poll_interval_is_clamped() {
         assert_eq!(poll_interval(0.2), Duration::from_secs_f64(0.1));
         assert_eq!(poll_interval(8.0), Duration::from_secs_f64(1.0));
+    }
+
+    #[test]
+    fn find_new_pane_returns_added_pane() {
+        let before = vec![pane("terminal:1")];
+        let after = vec![pane("terminal:1"), pane("terminal:2")];
+
+        let found = find_new_pane(&before, &after).expect("expected new pane");
+        assert_eq!(found.id, "terminal:2");
+    }
+
+    #[test]
+    fn find_new_pane_errors_when_none_added() {
+        let before = vec![pane("terminal:1")];
+        let after = vec![pane("terminal:1")];
+
+        let err = find_new_pane(&before, &after).expect_err("expected error");
+        assert_eq!(err, "no new panes detected");
+    }
+
+    #[test]
+    fn find_new_pane_errors_when_multiple_added() {
+        let before = vec![pane("terminal:1")];
+        let after = vec![pane("terminal:1"), pane("terminal:2"), pane("terminal:3")];
+
+        let err = find_new_pane(&before, &after).expect_err("expected error");
+        assert_eq!(err, "2 new panes detected");
     }
 }

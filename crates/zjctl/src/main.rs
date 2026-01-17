@@ -14,6 +14,8 @@ const HELP_AFTER: &str = r#"Examples:
   zjctl pane send --pane id:terminal:3 -- "ls -la\n"
   zjctl pane send --pane title:server -- "cargo run\n"
   zjctl pane send --pane cmd:/python/ -- "print('hi')\n"
+  zjctl pane launch
+  zjctl pane launch --direction right -- "zsh"
   zjctl pane capture --pane focused
   zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
   zjctl pane interrupt --pane title:vim
@@ -34,6 +36,8 @@ const PANE_HELP: &str = r#"Pane examples:
   zjctl pane focus --pane title:server
   zjctl pane rename --pane focused "API Server"
   zjctl pane resize --pane focused --increase --direction right --step 5
+  zjctl pane launch
+  zjctl pane launch --direction right -- "zsh"
   zjctl pane capture --pane focused --full
   zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
 "#;
@@ -217,6 +221,33 @@ enum PaneCommands {
         #[arg(long, default_value = "1")]
         step: u32,
     },
+    /// Launch a new pane and print its selector
+    Launch {
+        /// Direction to open the pane (right, down)
+        #[arg(long)]
+        direction: Option<String>,
+        /// Open the pane in floating mode
+        #[arg(long)]
+        floating: bool,
+        /// Name of the new pane
+        #[arg(long)]
+        name: Option<String>,
+        /// Working directory for the new pane
+        #[arg(long)]
+        cwd: Option<String>,
+        /// Close the pane when the command exits
+        #[arg(long)]
+        close_on_exit: bool,
+        /// Open the pane in-place, suspending the current pane
+        #[arg(long)]
+        in_place: bool,
+        /// Start the command suspended until Enter is pressed
+        #[arg(long)]
+        start_suspended: bool,
+        /// Command to run in the new pane (after --)
+        #[arg(last = true)]
+        command: Vec<String>,
+    },
 }
 
 fn main() {
@@ -302,6 +333,28 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                     decrease,
                     direction.as_deref(),
                     step,
+                )?;
+            }
+            PaneCommands::Launch {
+                direction,
+                floating,
+                name,
+                cwd,
+                close_on_exit,
+                in_place,
+                start_suspended,
+                command,
+            } => {
+                commands::pane::launch(
+                    plugin,
+                    direction.as_deref(),
+                    floating,
+                    name.as_deref(),
+                    cwd.as_deref(),
+                    close_on_exit,
+                    in_place,
+                    start_suspended,
+                    &command,
                 )?;
             }
         },
