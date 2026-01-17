@@ -6,18 +6,34 @@ Missing CLI surface for Zellij - pane-addressed operations via RPC.
 operations by ID or selector, even when Zellij's built-in CLI only targets the
 focused pane.
 
-## Scope
+## At a glance
 
-- `zjctl` works inside an active Zellij session (no remote mode).
-- The zrpc plugin must be installed and loaded in that session.
+- Target panes by selector (id/title/cmd/regex/focused)
+- Operate on panes directly: send, focus, rename, resize, capture, wait-idle
+- Launch panes and get back a selector
+- JSON output for automation
+- Action passthrough for `zellij action`
 
-## Prerequisites
+## Getting started
 
-- Zellij 0.43+
-- `zjctl` installed
-- `zrpc` plugin installed and loaded
+```bash
+# 1) Install + verify the plugin
+zjctl install --load
+zjctl doctor
+
+# 2) Launch a shell pane and run a command
+pane=$(zjctl pane launch -- "zsh")
+zjctl pane send --pane "$pane" -- "ls -la\n"
+
+# 3) Wait, capture, and clean up
+zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
+zjctl pane capture --pane "$pane"
+zjctl pane close --pane "$pane"
+```
 
 ## Installation
+
+Requires Zellij 0.43+.
 
 ### CLI
 
@@ -97,9 +113,9 @@ cargo build --release -p zrpc --target wasm32-wasip1
 cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 ```
 
-## Pane Identification
+## Usage guide
 
-Selectors you can use in `--pane`:
+### Pane selectors
 
 | Selector | Description |
 |----------|-------------|
@@ -112,119 +128,65 @@ Selectors you can use in `--pane`:
 | `cmd:/regex/` | Panes running command matching regex |
 | `tab:N:index:M` | Pane at index M in tab N |
 
-## IMPORTANT: Launch a shell first
+### Safety notes
 
-Always launch a shell pane (prefer `zsh`) before running commands. If you launch
-an app directly and it exits, the pane can close and you lose output.
-
-```bash
-pane=$(zjctl pane launch -- "zsh")
-zjctl pane send --pane "$pane" -- "your-command\n"
-```
-
-## Core Commands
-
-### Launch a pane
-
-```bash
-zjctl pane launch -- "zsh"
-zjctl pane launch --direction right -- "python"
-```
-
-### Send input to a pane
-
-```bash
-zjctl pane send --pane id:terminal:3 -- "ls -la\n"
-# Default: waits 1s before Enter
-zjctl pane send --pane id:terminal:3 --enter=false -- "ls -la"
-zjctl pane send --pane id:terminal:3 --delay-enter 0 -- "ls -la"
-```
-
-### Capture output
-
-```bash
-zjctl pane capture --pane focused
-zjctl pane capture --pane focused --full
-```
-
-### List panes
-
-```bash
-zjctl panes ls
-zjctl panes ls --json
-```
-
-### Status
-
-```bash
-zjctl status
-zjctl status --json
-```
-
-### Close a pane (safe by default)
-
-```bash
-zjctl pane close --pane id:terminal:3
-zjctl pane close --pane focused --force
-```
-
-### Interrupt / Escape
-
-```bash
-zjctl pane interrupt --pane id:terminal:3
-zjctl pane escape --pane id:terminal:3
-```
-
-### Wait for idle
-
-```bash
-zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
-```
-
-### Help / passthrough
-
-```bash
-zjctl help
-zjctl action new-pane
-```
-
-## Typical Workflow
-
-1. Install and verify the plugin (inside Zellij):
-   ```bash
-   zjctl install --load
-   zjctl doctor
-   ```
-2. Launch a shell pane and keep its selector:
-   ```bash
-   pane=$(zjctl pane launch -- "zsh")
-   ```
-3. Run commands in that pane:
-   ```bash
-   zjctl pane send --pane "$pane" -- "python script.py\n"
-   ```
-4. Wait for output to settle, then capture it:
-   ```bash
-   zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
-   zjctl pane capture --pane "$pane"
-   ```
-5. Clean up:
-   ```bash
-   zjctl pane close --pane "$pane"
-   ```
-
-## Tips
-
-- Save the pane selector returned by `zjctl pane launch`.
-- Use `zjctl panes ls --json` for automation.
-- Prefer `wait-idle` over repeated `capture` polling.
+- Always launch a shell pane (prefer `zsh`) before running commands; if a command
+  exits, you can lose output.
 - `zjctl pane send` waits 1s before Enter by default; use `--enter=false` or
   `--delay-enter 0` for immediate input.
 - `zjctl pane close` refuses to close the focused pane unless `--force`.
 
-## Avoiding Polling
+### Pane lifecycle (launch → run → capture → close)
 
-Instead of repeatedly checking with `capture`, use `wait-idle`:
+```bash
+pane=$(zjctl pane launch -- "zsh")
+zjctl pane send --pane "$pane" -- "python script.py\n"
+zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
+zjctl pane capture --pane "$pane"
+zjctl pane close --pane "$pane"
+```
+
+### Common commands
+
+```bash
+# Inventory and status
+zjctl panes ls
+zjctl panes ls --json
+zjctl status
+zjctl status --json
+
+# Send input
+zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+zjctl pane send --pane id:terminal:3 --enter=false -- "ls -la"
+
+# Navigation and layout
+zjctl pane focus --pane title:server
+zjctl pane rename --pane focused "API Server"
+zjctl pane resize --pane focused --increase --direction right --step 5
+
+# Capture and wait
+zjctl pane capture --pane focused
+zjctl pane capture --pane focused --full
+zjctl pane wait-idle --pane focused --idle-time 3 --timeout 60
+
+# Signals
+zjctl pane interrupt --pane id:terminal:3
+zjctl pane escape --pane id:terminal:3
+
+# Close / launch
+zjctl pane close --pane id:terminal:3
+zjctl pane close --pane focused --force
+zjctl pane launch --direction right -- "python"
+
+# Help / passthrough
+zjctl help
+zjctl action new-pane
+```
+
+### Automation tips
+
+- Use `zjctl panes ls --json` for selection logic.
+- Prefer `wait-idle` instead of polling `capture`.
 
 ```bash
 zjctl pane send --pane id:terminal:3 -- "analyze this code\n"
@@ -232,7 +194,7 @@ zjctl pane wait-idle --pane id:terminal:3 --idle-time 3.0
 zjctl pane capture --pane id:terminal:3
 ```
 
-## Troubleshooting
+### Troubleshooting
 
 ```bash
 # Diagnose setup issues
