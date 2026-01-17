@@ -96,7 +96,8 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 ### Typical workflow
 
 ```bash
-# 1) Ensure plugin is installed and responding
+# 1) Ensure plugin is installed and responding (inside Zellij)
+zjctl install --load
 zjctl doctor
 
 # 2) List panes and pick a target
@@ -104,6 +105,39 @@ zjctl panes ls
 
 # 3) Send a command to a pane (selector by id/title/cmd)
 zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+zjctl pane send --pane title:server -- "cargo run\n"
+zjctl pane send --pane cmd:/python/ -- "print('hello')\n"
+
+# 4) Focus or rename a pane if needed
+zjctl pane focus --pane title:server
+zjctl pane rename --pane focused "API Server"
+
+# 5) Resize the focused pane
+zjctl pane resize --pane focused --increase --direction right --step 5
+```
+
+### Typical workflow (automation / scripts)
+
+```bash
+# 1) Verify health once
+zjctl doctor --json
+
+# 2) Capture pane inventory for selection logic
+zjctl panes ls --json > /tmp/panes.json
+
+# 3) Send a command to all matching panes
+zjctl pane send --pane title:/worker/ --all -- "echo ready\n"
+```
+
+### Typical workflow (troubleshooting)
+
+```bash
+# If commands fail, check plugin presence and permissions
+zjctl doctor
+
+# Reinstall and re-load the plugin if needed
+zjctl install --force
+zjctl install --load
 ```
 
 ### Commands
