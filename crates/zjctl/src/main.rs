@@ -52,6 +52,50 @@ const PANES_HELP: &str = r#"Panes examples:
   zjctl panes ls --json
 "#;
 
+const HELP_QUICKSTART: &str = r#"Quickstart:
+  # Setup
+  zjctl install --load
+  zjctl doctor
+
+  # List panes
+  zjctl panes ls
+  zjctl panes ls --json
+
+  # Show focused status
+  zjctl status
+  zjctl status --json
+
+  # Launch a pane
+  pane=$(zjctl pane launch -- "zsh")
+  zjctl pane launch --direction right -- "python"
+
+  # Send input (default: 1s delay then Enter)
+  zjctl pane send --pane "$pane" -- "ls -la\n"
+  zjctl pane send --pane "$pane" --enter=false -- "echo ready"
+  zjctl pane send --pane "$pane" --delay-enter 0 -- "echo done"
+  zjctl pane send --pane title:/worker/ --all -- "echo hi\n"
+
+  # Focus / rename / resize
+  zjctl pane focus --pane title:server
+  zjctl pane rename --pane focused "API Server"
+  zjctl pane resize --pane focused --increase --direction right --step 5
+
+  # Capture / wait-idle
+  zjctl pane capture --pane "$pane"
+  zjctl pane capture --pane "$pane" --full
+  zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
+
+  # Interrupt / escape
+  zjctl pane interrupt --pane "$pane"
+  zjctl pane escape --pane "$pane"
+
+  # Close (safe by default)
+  zjctl pane close --pane "$pane"
+  zjctl pane close --pane focused --force
+
+  # Pass through to zellij action
+  zjctl action new-pane
+"#;
 /// zjctl - Missing CLI surface for Zellij
 #[derive(Parser, Debug)]
 #[command(
@@ -100,6 +144,8 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Print usage examples
+    Help,
     /// Install the zrpc plugin
     Install {
         /// Print the commands that would be run
@@ -289,6 +335,9 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         Commands::Doctor { json } => {
             commands::doctor::run(plugin, json)?;
         }
+        Commands::Help => {
+            print_agent_help();
+        }
         Commands::Install {
             print,
             force,
@@ -389,4 +438,11 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         },
     }
     Ok(())
+}
+
+fn print_agent_help() {
+    println!("zjctl help");
+    println!("==========");
+    println!("{HELP_QUICKSTART}");
+    println!("See `zjctl --help` for the full CLI reference.");
 }
