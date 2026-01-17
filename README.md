@@ -38,7 +38,11 @@ Or use the installer:
 ```bash
 zjctl install
 zjctl install --load
+zjctl install --print
+zjctl install --force
 ```
+
+The installer uses your platform config dir (XDG, APPDATA, or ~/.config).
 
 ### Load the plugin
 

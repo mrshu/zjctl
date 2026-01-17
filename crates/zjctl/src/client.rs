@@ -171,6 +171,88 @@ pub fn plugin_file_path(plugin_url: &str) -> Option<PathBuf> {
     Some(expand_tilde(raw))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::panic::{catch_unwind, AssertUnwindSafe};
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn with_env<F: FnOnce()>(vars: &[(&str, Option<&str>)], f: F) {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let mut previous = Vec::new();
+        for (key, value) in vars {
+            previous.push((*key, std::env::var_os(key)));
+            match value {
+                Some(val) => std::env::set_var(key, val),
+                None => std::env::remove_var(key),
+            }
+        }
+
+        let result = catch_unwind(AssertUnwindSafe(f));
+
+        for (key, value) in previous {
+            match value {
+                Some(val) => std::env::set_var(key, val),
+                None => std::env::remove_var(key),
+            }
+        }
+
+        if let Err(err) = result {
+            std::panic::resume_unwind(err);
+        }
+    }
+
+    #[test]
+    fn default_plugin_path_prefers_xdg() {
+        with_env(
+            &[("XDG_CONFIG_HOME", Some("/tmp/xdg")), ("HOME", Some("/tmp/home"))],
+            || {
+                let expected = PathBuf::from("/tmp/xdg")
+                    .join("zellij")
+                    .join("plugins")
+                    .join("zrpc.wasm");
+                assert_eq!(default_plugin_path(), expected);
+            },
+        );
+    }
+
+    #[test]
+    fn plugin_file_path_expands_tilde() {
+        with_env(&[("HOME", Some("/tmp/home"))], || {
+            let path = plugin_file_path("file:~/.config/zellij/plugins/zrpc.wasm")
+                .expect("expected path");
+            let expected = PathBuf::from("/tmp/home")
+                .join(".config")
+                .join("zellij")
+                .join("plugins")
+                .join("zrpc.wasm");
+            assert_eq!(path, expected);
+        });
+    }
+
+    #[test]
+    fn plugin_file_path_ignores_non_file_urls() {
+        assert!(plugin_file_path("https://example.com/zrpc.wasm").is_none());
+    }
+
+    #[test]
+    fn plugin_launch_url_prefers_explicit_path() {
+        let path = Path::new("/tmp/zrpc.wasm");
+        let url = plugin_launch_url("file:/ignored.wasm", Some(path));
+        assert_eq!(url, format!("file:{}", path.display()));
+    }
+
+    #[test]
+    fn plugin_install_commands_include_download_url() {
+        let path = Path::new("/tmp/zrpc.wasm");
+        let (_, download_cmd, launch_cmd) = plugin_install_commands("file:/tmp/zrpc.wasm", path);
+        assert!(download_cmd.contains(DEFAULT_PLUGIN_DOWNLOAD_URL));
+        assert!(launch_cmd.contains("zellij action launch-plugin"));
+    }
+}
+
 fn expand_tilde(path: &str) -> PathBuf {
     if path == "~" {
         if let Some(home) = std::env::var_os("HOME") {
