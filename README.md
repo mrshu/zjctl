@@ -109,7 +109,7 @@ cargo build --release -p zjctl
 cp target/release/zjctl ~/.local/bin/
 
 # Build and install plugin
-cargo build --release -p zrpc --target wasm32-wasip1
+cargo build --release -p zjctl-zrpc --target wasm32-wasip1
 cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 ```
 

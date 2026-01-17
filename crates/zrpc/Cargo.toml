@@ -1,5 +1,5 @@
 [package]
-name = "zrpc"
+name = "zjctl-zrpc"
 description = "Zellij RPC plugin for zjctl"
 readme = "README.md"
 keywords = ["zellij", "plugin", "rpc", "wasm"]
@@ -8,6 +8,10 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+
+[[bin]]
+name = "zrpc"
+path = "src/main.rs"
 
 [dependencies]
 zjctl-proto.workspace = true

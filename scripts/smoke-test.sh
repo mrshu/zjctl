@@ -44,7 +44,7 @@ build() {
     ZJCTL_PATH="$PROJECT_ROOT/target/release/zjctl"
 
     info "Building zrpc plugin..."
-    cargo build --release -p zrpc --target wasm32-wasip1 --manifest-path "$PROJECT_ROOT/Cargo.toml" 2>/dev/null || {
+    cargo build --release -p zjctl-zrpc --target wasm32-wasip1 --manifest-path "$PROJECT_ROOT/Cargo.toml" 2>/dev/null || {
         info "WASM build skipped (target not installed)"
         info "Run: rustup target add wasm32-wasip1"
     }
