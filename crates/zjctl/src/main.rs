@@ -102,9 +102,12 @@ enum Commands {
         /// Attempt to load the plugin in the current Zellij session
         #[arg(long)]
         load: bool,
-        /// Add the plugin to config.kdl load_plugins for auto-load
-        #[arg(long)]
+        /// Add the plugin to config.kdl load_plugins (default: true)
+        #[arg(long, default_value_t = true)]
         auto_load: bool,
+        /// Do not add the plugin to config.kdl load_plugins
+        #[arg(long, conflicts_with = "auto_load")]
+        no_auto_load: bool,
     },
 }
 
@@ -240,7 +243,9 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             force,
             load,
             auto_load,
+            no_auto_load,
         } => {
+            let auto_load = if no_auto_load { false } else { auto_load };
             commands::install::run(plugin, print, force, load, auto_load)?;
         }
         Commands::Status { json } => {

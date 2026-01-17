@@ -29,7 +29,7 @@ pub fn run(
         println!("load: {launch_cmd}");
         if auto_load {
             println!(
-                "config: add to {} -> load_plugins {{ {} }}",
+                "config: add to {} -> load_plugins {{ \"{}\" }}",
                 config_path.display(),
                 config_url
             );
@@ -143,7 +143,16 @@ fn ensure_auto_load_config(
         String::new()
     };
 
+    let quoted = format!("\"{plugin_url}\"");
+    if contents.contains(&quoted) {
+        return Ok(false);
+    }
     if contents.contains(plugin_url) {
+        let updated = contents.replace(plugin_url, &quoted);
+        if updated != contents {
+            fs::write(path, updated)?;
+            return Ok(true);
+        }
         return Ok(false);
     }
 
@@ -156,7 +165,7 @@ fn ensure_auto_load_config(
     }
 
     contents.push_str("\nload_plugins {\n    ");
-    contents.push_str(plugin_url);
+    contents.push_str(&quoted);
     contents.push_str("\n}\n");
 
     fs::write(path, contents)?;
@@ -177,6 +186,36 @@ mod tests {
 
         assert!(first);
         assert!(!second);
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn ensure_auto_load_config_quotes_plugin_url() {
+        let path = std::env::temp_dir().join(format!("zjctl-config-{}.kdl", uuid::Uuid::new_v4()));
+        let plugin_url = "file:/tmp/zrpc.wasm";
+
+        ensure_auto_load_config(&path, plugin_url).expect("write config");
+        let contents = fs::read_to_string(&path).expect("read config");
+
+        assert!(contents.contains("\"file:/tmp/zrpc.wasm\""));
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn ensure_auto_load_config_fixes_unquoted_entry() {
+        let path = std::env::temp_dir().join(format!("zjctl-config-{}.kdl", uuid::Uuid::new_v4()));
+        let plugin_url = "file:/tmp/zrpc.wasm";
+
+        fs::write(&path, "load_plugins {\n    file:/tmp/zrpc.wasm\n}\n").expect("seed config");
+
+        let updated = ensure_auto_load_config(&path, plugin_url).expect("update config");
+        let contents = fs::read_to_string(&path).expect("read config");
+
+        assert!(updated);
+        assert!(contents.contains("\"file:/tmp/zrpc.wasm\""));
+        assert!(!contents.contains("\n    file:/tmp/zrpc.wasm\n"));
 
         let _ = fs::remove_file(path);
     }
