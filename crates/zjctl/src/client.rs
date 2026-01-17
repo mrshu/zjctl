@@ -35,11 +35,39 @@ pub enum ClientError {
     RpcError(String),
 }
 
-pub const DEFAULT_PLUGIN_URL: &str = "file:~/.config/zellij/plugins/zrpc.wasm";
+pub fn default_plugin_url() -> String {
+    format!("file:{}", default_plugin_path().display())
+}
+
+pub fn default_plugin_path() -> PathBuf {
+    let rel = Path::new("zellij").join("plugins").join("zrpc.wasm");
+
+    if let Ok(dir) = std::env::var("XDG_CONFIG_HOME") {
+        return PathBuf::from(dir).join(rel);
+    }
+
+    if cfg!(windows) {
+        if let Ok(dir) = std::env::var("APPDATA") {
+            return PathBuf::from(dir).join(rel);
+        }
+        if let Ok(dir) = std::env::var("USERPROFILE") {
+            return PathBuf::from(dir).join(rel);
+        }
+    }
+
+    if let Ok(home) = std::env::var("HOME") {
+        return PathBuf::from(home)
+            .join(".config")
+            .join(rel);
+    }
+
+    PathBuf::from("zrpc.wasm")
+}
 
 /// Send an RPC request to the zrpc plugin and wait for response
 pub fn call(request: &RpcRequest, plugin_path: Option<&str>) -> Result<RpcResponse, ClientError> {
-    let plugin_url = plugin_path.unwrap_or(DEFAULT_PLUGIN_URL);
+    let default_url = default_plugin_url();
+    let plugin_url = plugin_path.unwrap_or(default_url.as_str());
     let request_json = serde_json::to_string(request)?;
 
     if let Some(path) = plugin_file_path(plugin_url) {

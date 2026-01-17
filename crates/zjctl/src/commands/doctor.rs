@@ -6,7 +6,8 @@ use crate::client::{self, ClientError};
 use zjctl_proto::methods;
 
 pub fn run(plugin: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
-    let plugin_url = plugin.unwrap_or(client::DEFAULT_PLUGIN_URL);
+    let default_url = client::default_plugin_url();
+    let plugin_url = plugin.unwrap_or(default_url.as_str());
     let mut ok = true;
 
     println!("zjctl doctor");
