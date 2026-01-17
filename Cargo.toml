@@ -28,4 +28,4 @@ clap = { version = "4.0", features = ["derive", "env"] }
 zellij-tile = "0.43"
 
 # Internal
-zjctl-proto = { path = "crates/zjctl-proto" }
+zjctl-proto = { path = "crates/zjctl-proto", version = "0.1.0" }

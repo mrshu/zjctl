@@ -1,6 +1,9 @@
 [package]
 name = "zjctl"
 description = "Missing CLI surface for Zellij - pane-addressed operations"
+readme = "README.md"
+keywords = ["zellij", "terminal", "cli", "pane", "rpc"]
+categories = ["command-line-utilities"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true
