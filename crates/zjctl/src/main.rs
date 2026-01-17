@@ -14,6 +14,8 @@ const HELP_AFTER: &str = r#"Examples:
   zjctl pane send --pane id:terminal:3 -- "ls -la\n"
   zjctl pane send --pane title:server -- "cargo run\n"
   zjctl pane send --pane cmd:/python/ -- "print('hi')\n"
+  zjctl pane close --pane id:terminal:3
+  zjctl pane close --pane focused --force
   zjctl pane launch
   zjctl pane launch --direction right -- "zsh"
   zjctl pane capture --pane focused
@@ -37,6 +39,8 @@ const PANE_HELP: &str = r#"Pane examples:
   zjctl pane focus --pane title:server
   zjctl pane rename --pane focused "API Server"
   zjctl pane resize --pane focused --increase --direction right --step 5
+  zjctl pane close --pane id:terminal:3
+  zjctl pane close --pane focused --force
   zjctl pane launch
   zjctl pane launch --direction right -- "zsh"
   zjctl pane capture --pane focused --full
@@ -228,6 +232,15 @@ enum PaneCommands {
         #[arg(long, default_value = "1")]
         step: u32,
     },
+    /// Close a pane (refuses to close focused unless --force)
+    Close {
+        /// Pane selector
+        #[arg(long)]
+        pane: String,
+        /// Force closing focused pane
+        #[arg(long)]
+        force: bool,
+    },
     /// Launch a new pane and print its selector
     Launch {
         /// Direction to open the pane (right, down)
@@ -347,6 +360,9 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                     direction.as_deref(),
                     step,
                 )?;
+            }
+            PaneCommands::Close { pane, force } => {
+                commands::pane::close(plugin, &pane, force)?;
             }
             PaneCommands::Launch {
                 direction,

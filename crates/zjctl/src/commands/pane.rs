@@ -181,6 +181,24 @@ pub fn resize(
     Ok(())
 }
 
+pub fn close(
+    plugin: Option<&str>,
+    selector: &str,
+    force: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let selection = resolve_selection(plugin, selector)?;
+    check_close_allowed(&selection, force)?;
+
+    focus_target(plugin, &selection.target_selector)?;
+    run_close_pane_action()?;
+
+    if let Some(selector) = selection.restore_selector {
+        let _ = focus_target(plugin, &selector);
+    }
+
+    Ok(())
+}
+
 pub struct LaunchOptions<'a> {
     pub direction: Option<&'a str>,
     pub floating: bool,
@@ -228,6 +246,18 @@ fn send_raw(
 
     client::rpc_call(plugin, methods::PANE_SEND, params)?;
     Ok(())
+}
+
+fn run_close_pane_action() -> Result<(), Box<dyn std::error::Error>> {
+    let status = Command::new("zellij")
+        .args(["action", "close-pane"])
+        .status()
+        .map_err(|err| format!("failed to run zellij: {err}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("zellij action close-pane failed: {status:?}").into())
+    }
 }
 
 #[derive(Debug)]
@@ -410,6 +440,22 @@ fn poll_interval(idle_time: f64) -> Duration {
     Duration::from_secs_f64(interval)
 }
 
+fn check_close_allowed(
+    selection: &Selection,
+    force: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if !force {
+        let focused_selector = selection
+            .restore_selector
+            .as_deref()
+            .unwrap_or(&selection.target_selector);
+        if focused_selector == selection.target_selector {
+            return Err("refusing to close focused pane (use --force)".into());
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -455,6 +501,40 @@ mod tests {
     fn poll_interval_is_clamped() {
         assert_eq!(poll_interval(0.2), Duration::from_secs_f64(0.1));
         assert_eq!(poll_interval(8.0), Duration::from_secs_f64(1.0));
+    }
+
+    #[test]
+    fn close_refuses_focused_without_force() {
+        let selection = Selection {
+            target_selector: "focused".to_string(),
+            restore_selector: None,
+        };
+
+        let err = check_close_allowed(&selection, false).expect_err("expected error");
+        assert_eq!(
+            err.to_string(),
+            "refusing to close focused pane (use --force)"
+        );
+    }
+
+    #[test]
+    fn close_allows_non_focused() {
+        let selection = Selection {
+            target_selector: "id:terminal:2".to_string(),
+            restore_selector: Some("id:terminal:1".to_string()),
+        };
+
+        check_close_allowed(&selection, false).expect("allowed");
+    }
+
+    #[test]
+    fn close_allows_force() {
+        let selection = Selection {
+            target_selector: "focused".to_string(),
+            restore_selector: None,
+        };
+
+        check_close_allowed(&selection, true).expect("allowed");
     }
 
     #[test]
