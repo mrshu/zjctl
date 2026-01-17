@@ -1,10 +1,9 @@
 # zjctl
 
-Missing CLI surface for Zellij - pane-addressed operations via RPC.
+Programmatic Zellij automation for humans, scripts, and agents alike.
 
-`zjctl` provides a unified CLI + Zellij plugin (`zrpc`) to perform pane
-operations by ID or selector, even when Zellij's built-in CLI only targets the
-focused pane.
+`zjctl` is a CLI + plugin that lets you script Zellij end-to-end (actions,
+status, setup, and pane operations) via a single CLI command.
 
 ## At a glance
 

@@ -1,6 +1,6 @@
 # zjctl
 
-Missing CLI surface for Zellij - pane-addressed operations.
+Programmatic Zellij automation for humans, scripts, and agents alike.
 
 This crate provides the `zjctl` binary.
 
