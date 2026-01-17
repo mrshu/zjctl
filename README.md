@@ -33,16 +33,23 @@ curl -L https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm \
   -o ~/.config/zellij/plugins/zrpc.wasm
 ```
 
-Or use the installer:
+Or use the installer (recommended):
 
 ```bash
+# Install plugin and add to config.kdl for auto-load (default)
 zjctl install
+
+# Also load it into the current session right now
 zjctl install --load
-zjctl install --auto-load
-zjctl install --load --auto-load
-zjctl install --print
-zjctl install --force
+
+# Skip config.kdl changes (one-off install)
 zjctl install --no-auto-load
+
+# Show what would be executed
+zjctl install --print
+
+# Re-download even if the file exists
+zjctl install --force
 ```
 
 The installer uses your platform config dir (XDG, APPDATA, or ~/.config),
