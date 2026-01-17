@@ -17,7 +17,7 @@ pub enum ClientError {
     #[error("failed to serialize request: {0}")]
     Serialize(#[from] serde_json::Error),
     #[error(
-        "zrpc plugin not found at {path}\n\nInstall:\n  {install_cmd}\n  {download_cmd}\n\nLoad it in Zellij:\n  {launch_cmd}\n  # or add to config.kdl load_plugins\n\nRun `zjctl doctor` for more checks."
+        "zrpc plugin not found at {path}\n\nInstall (recommended):\n  zjctl install\n\nInstall (manual):\n  {install_cmd}\n  {download_cmd}\n\nLoad it in Zellij:\n  {launch_cmd}\n  # or add to config.kdl load_plugins\n\nRun `zjctl doctor` for more checks."
     )]
     PluginNotInstalled {
         path: String,
