@@ -35,6 +35,19 @@ zjctl pane close --pane "$pane"
 
 Requires Zellij 0.43+.
 
+### Cargo (crates.io)
+
+```bash
+# Install CLI
+cargo install zjctl
+
+# Install plugin (WASM)
+rustup target add wasm32-wasip1
+cargo install zjctl-zrpc --target wasm32-wasip1 --root ~/.local
+mkdir -p ~/.config/zellij/plugins
+cp ~/.local/bin/zrpc.wasm ~/.config/zellij/plugins/zrpc.wasm
+```
+
 ### Recommended installer
 
 ```bash
