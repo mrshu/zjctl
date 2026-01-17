@@ -7,9 +7,51 @@ use clap::{Parser, Subcommand};
 mod client;
 mod commands;
 
+const HELP_AFTER: &str = r#"Examples:
+  zjctl doctor
+  zjctl status --json
+  zjctl panes ls --json
+  zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+  zjctl pane send --pane title:server -- "cargo run\n"
+  zjctl pane send --pane cmd:/python/ -- "print('hi')\n"
+  zjctl pane capture --pane focused
+  zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
+  zjctl pane interrupt --pane title:vim
+  zjctl pane escape --pane title:vim
+
+Selectors:
+  id:terminal:N   id:plugin:N   focused
+  title:substring title:/regex/
+  cmd:substring   cmd:/regex/
+  tab:N:index:M
+
+Plugin path:
+  --plugin / ZJCTL_PLUGIN_PATH override the default plugin path.
+"#;
+
+const PANE_HELP: &str = r#"Pane examples:
+  zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+  zjctl pane focus --pane title:server
+  zjctl pane rename --pane focused "API Server"
+  zjctl pane resize --pane focused --increase --direction right --step 5
+  zjctl pane capture --pane focused --full
+  zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
+"#;
+
+const PANES_HELP: &str = r#"Panes examples:
+  zjctl panes ls
+  zjctl panes ls --json
+"#;
+
 /// zjctl - Missing CLI surface for Zellij
 #[derive(Parser, Debug)]
-#[command(name = "zjctl", version, about, long_about = None)]
+#[command(
+    name = "zjctl",
+    version,
+    about,
+    long_about = None,
+    after_help = HELP_AFTER
+)]
 pub struct Cli {
     /// Path to the zrpc plugin wasm file
     #[arg(long, env = "ZJCTL_PLUGIN_PATH")]
@@ -64,6 +106,7 @@ enum Commands {
 }
 
 #[derive(Subcommand, Debug)]
+#[command(after_help = PANES_HELP)]
 enum PanesCommands {
     /// List all panes
     Ls {
@@ -74,6 +117,7 @@ enum PanesCommands {
 }
 
 #[derive(Subcommand, Debug)]
+#[command(after_help = PANE_HELP)]
 enum PaneCommands {
     /// Send input to a pane
     Send {
