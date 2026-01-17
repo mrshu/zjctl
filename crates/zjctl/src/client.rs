@@ -39,6 +39,9 @@ pub fn default_plugin_url() -> String {
     format!("file:{}", default_plugin_path().display())
 }
 
+pub const DEFAULT_PLUGIN_DOWNLOAD_URL: &str =
+    "https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm";
+
 pub fn default_plugin_path() -> PathBuf {
     let rel = Path::new("zellij").join("plugins").join("zrpc.wasm");
 
@@ -187,7 +190,7 @@ pub(crate) fn plugin_launch_command(plugin_url: &str, plugin_path: Option<&Path>
     format!("zellij action launch-plugin \"{}\"", launch_url)
 }
 
-fn plugin_launch_url(plugin_url: &str, plugin_path: Option<&Path>) -> String {
+pub(crate) fn plugin_launch_url(plugin_url: &str, plugin_path: Option<&Path>) -> String {
     if plugin_url.contains("://") && !plugin_url.starts_with("file:") {
         return plugin_url.to_string();
     }
@@ -208,7 +211,8 @@ pub(crate) fn plugin_install_commands(
     let dir = plugin_path.parent().unwrap_or_else(|| Path::new("."));
     let install_cmd = format!("mkdir -p \"{}\"", dir.display());
     let download_cmd = format!(
-        "curl -L https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm -o \"{}\"",
+        "curl -L {} -o \"{}\"",
+        DEFAULT_PLUGIN_DOWNLOAD_URL,
         plugin_path.display()
     );
     let launch_cmd = plugin_launch_command(plugin_url, Some(plugin_path));

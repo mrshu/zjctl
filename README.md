@@ -33,6 +33,13 @@ curl -L https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm \
   -o ~/.config/zellij/plugins/zrpc.wasm
 ```
 
+Or use the installer:
+
+```bash
+zjctl install
+zjctl install --load
+```
+
 ### Load the plugin
 
 In your Zellij session:
@@ -55,6 +62,7 @@ Verify setup:
 
 ```bash
 zjctl doctor
+zjctl doctor --json
 ```
 
 ### From source
@@ -79,6 +87,11 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 ```bash
 # Verify setup
 zjctl doctor
+zjctl doctor --json
+
+# Install the plugin
+zjctl install
+zjctl install --load
 
 # List all panes
 zjctl panes ls

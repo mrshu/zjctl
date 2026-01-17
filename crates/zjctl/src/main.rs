@@ -43,6 +43,18 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Install the zrpc plugin
+    Install {
+        /// Print the commands that would be run
+        #[arg(long)]
+        print: bool,
+        /// Re-download plugin even if it exists
+        #[arg(long)]
+        force: bool,
+        /// Attempt to load the plugin in the current Zellij session
+        #[arg(long)]
+        load: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -121,6 +133,13 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::Doctor { json } => {
             commands::doctor::run(plugin, json)?;
+        }
+        Commands::Install {
+            print,
+            force,
+            load,
+        } => {
+            commands::install::run(plugin, print, force, load)?;
         }
         Commands::Panes { cmd } => match cmd {
             PanesCommands::Ls { json } => {
