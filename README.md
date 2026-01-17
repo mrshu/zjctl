@@ -108,6 +108,7 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 - Use `zjctl panes ls` to confirm the target before sending input.
 - `zjctl pane send` waits 1s before pressing Enter by default; use
   `--enter=false` or `--delay-enter 0` when needed.
+- `zjctl pane close` refuses to close the focused pane unless `--force`.
 
 ### Typical workflow
 
@@ -200,6 +201,10 @@ zjctl pane wait-idle --pane focused --idle-time 3 --timeout 60
 # Send interrupt / escape
 zjctl pane interrupt --pane cmd:cargo
 zjctl pane escape --pane title:vim
+
+# Close a pane (won't close focused without --force)
+zjctl pane close --pane id:terminal:3
+zjctl pane close --pane focused --force
 
 # Launch a pane and get its selector
 zjctl pane launch -- "zsh"
