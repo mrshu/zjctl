@@ -7,21 +7,22 @@ use clap::{ArgAction, Parser, Subcommand};
 mod client;
 mod commands;
 
-const HELP_AFTER: &str = r#"Examples:
+const HELP_AFTER: &str = r#"Quickstart:
+  # Install + verify the plugin
+  zjctl install --load
+
   zjctl doctor
-  zjctl status --json
-  zjctl panes ls --json
-  zjctl pane send --pane id:terminal:3 -- "ls -la\n"
-  zjctl pane send --pane title:server -- "cargo run\n"
-  zjctl pane send --pane cmd:/python/ -- "print('hi')\n"
-  zjctl pane close --pane id:terminal:3
-  zjctl pane close --pane focused --force
-  zjctl pane launch
-  zjctl pane launch --direction right -- "zsh"
-  zjctl pane capture --pane focused
-  zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
-  zjctl pane interrupt --pane title:vim
-  zjctl pane escape --pane title:vim
+
+  # Launch a shell pane, run a command, capture output
+  pane=$(zjctl pane launch -- "zsh")
+
+  zjctl pane send --pane "$pane" -- "ls -la\n"
+
+  zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
+
+  zjctl pane capture --pane "$pane"
+
+  zjctl pane close --pane "$pane"
 
 Selectors:
   id:terminal:N   id:plugin:N   focused
@@ -31,20 +32,35 @@ Selectors:
 
 Plugin path:
   --plugin / ZJCTL_PLUGIN_PATH override the default plugin path.
+
+More help:
+  zjctl help
 "#;
 
 const PANE_HELP: &str = r#"Pane examples:
+  # Send input to a pane (default: delay then Enter)
   zjctl pane send --pane id:terminal:3 -- "ls -la\n"
-  zjctl pane send --pane id:terminal:3 --enter=false -- "ls -la"
+
+  # Focus by selector
   zjctl pane focus --pane title:server
+
+  # Rename the focused pane
   zjctl pane rename --pane focused "API Server"
+
+  # Resize the focused pane
   zjctl pane resize --pane focused --increase --direction right --step 5
-  zjctl pane close --pane id:terminal:3
-  zjctl pane close --pane focused --force
-  zjctl pane launch
-  zjctl pane launch --direction right -- "zsh"
+
+  # Capture output and wait for idle
   zjctl pane capture --pane focused --full
+
   zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
+
+  # Close a pane safely (use --force to close focused)
+  zjctl pane close --pane id:terminal:3
+
+  # Launch a new pane and print its selector
+  zjctl pane launch --direction right -- "zsh"
+
 "#;
 
 const PANES_HELP: &str = r#"Panes examples:
@@ -53,49 +69,84 @@ const PANES_HELP: &str = r#"Panes examples:
 "#;
 
 const HELP_QUICKSTART: &str = r#"Quickstart:
-  # Setup
+  # Setup + verify
   zjctl install --load
+
   zjctl doctor
 
-  # List panes
-  zjctl panes ls
-  zjctl panes ls --json
-
-  # Show focused status
-  zjctl status
-  zjctl status --json
-
-  # Launch a pane
+  # Launch a shell pane and run a command
   pane=$(zjctl pane launch -- "zsh")
-  zjctl pane launch --direction right -- "python"
 
-  # Send input (default: 1s delay then Enter)
   zjctl pane send --pane "$pane" -- "ls -la\n"
-  zjctl pane send --pane "$pane" --enter=false -- "echo ready"
-  zjctl pane send --pane "$pane" --delay-enter 0 -- "echo done"
-  zjctl pane send --pane title:/worker/ --all -- "echo hi\n"
 
-  # Focus / rename / resize
-  zjctl pane focus --pane title:server
-  zjctl pane rename --pane focused "API Server"
-  zjctl pane resize --pane focused --increase --direction right --step 5
-
-  # Capture / wait-idle
-  zjctl pane capture --pane "$pane"
-  zjctl pane capture --pane "$pane" --full
+  # Wait for output, capture it, then close the pane
   zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
 
-  # Interrupt / escape
-  zjctl pane interrupt --pane "$pane"
-  zjctl pane escape --pane "$pane"
+  zjctl pane capture --pane "$pane"
 
-  # Close (safe by default)
   zjctl pane close --pane "$pane"
-  zjctl pane close --pane focused --force
 
-  # Pass through to zellij action
-  zjctl action new-pane
+Tips:
+  - Use `zjctl pane <cmd> --help` for command-specific examples
+  - Use `zjctl panes ls --json` to drive automation
 "#;
+
+const PANE_SEND_HELP: &str = r#"Examples:
+  # Send text + Enter (default 1s delay)
+  zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+  # Send without Enter
+  zjctl pane send --pane id:terminal:3 --enter=false -- "ls -la"
+"#;
+
+const PANE_FOCUS_HELP: &str = r#"Examples:
+  # Focus by title or id
+  zjctl pane focus --pane title:server
+  zjctl pane focus --pane id:terminal:3
+"#;
+
+const PANE_INTERRUPT_HELP: &str = r#"Examples:
+  # Send Ctrl+C
+  zjctl pane interrupt --pane id:terminal:3
+"#;
+
+const PANE_ESCAPE_HELP: &str = r#"Examples:
+  # Send Escape
+  zjctl pane escape --pane id:terminal:3
+"#;
+
+const PANE_CAPTURE_HELP: &str = r#"Examples:
+  # Capture output
+  zjctl pane capture --pane focused
+  zjctl pane capture --pane focused --full
+"#;
+
+const PANE_WAIT_HELP: &str = r#"Examples:
+  # Wait for output to settle
+  zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
+"#;
+
+const PANE_RENAME_HELP: &str = r#"Examples:
+  # Rename the focused pane
+  zjctl pane rename --pane focused "API Server"
+"#;
+
+const PANE_RESIZE_HELP: &str = r#"Examples:
+  # Resize the focused pane
+  zjctl pane resize --pane focused --increase --direction right --step 5
+"#;
+
+const PANE_CLOSE_HELP: &str = r#"Examples:
+  # Close a pane (safe by default)
+  zjctl pane close --pane id:terminal:3
+  zjctl pane close --pane focused --force
+"#;
+
+const PANE_LAUNCH_HELP: &str = r#"Examples:
+  # Launch a new pane and print its selector
+  zjctl pane launch -- "zsh"
+  zjctl pane launch --direction right -- "python"
+"#;
+
 /// zjctl - Missing CLI surface for Zellij
 #[derive(Parser, Debug)]
 #[command(
@@ -144,7 +195,7 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
-    /// Print usage examples
+    /// Agent-friendly quickstart
     Help,
     /// Install the zrpc plugin
     Install {
@@ -181,6 +232,7 @@ enum PanesCommands {
 #[command(after_help = PANE_HELP)]
 enum PaneCommands {
     /// Send input to a pane
+    #[command(after_help = PANE_SEND_HELP)]
     Send {
         /// Pane selector
         #[arg(long)]
@@ -199,12 +251,14 @@ enum PaneCommands {
         bytes: Vec<String>,
     },
     /// Focus a pane
+    #[command(after_help = PANE_FOCUS_HELP)]
     Focus {
         /// Pane selector
         #[arg(long)]
         pane: String,
     },
     /// Send Ctrl+C to a pane
+    #[command(after_help = PANE_INTERRUPT_HELP)]
     Interrupt {
         /// Pane selector
         #[arg(long)]
@@ -214,6 +268,7 @@ enum PaneCommands {
         all: bool,
     },
     /// Send Escape to a pane
+    #[command(after_help = PANE_ESCAPE_HELP)]
     Escape {
         /// Pane selector
         #[arg(long)]
@@ -223,6 +278,7 @@ enum PaneCommands {
         all: bool,
     },
     /// Capture pane output to stdout
+    #[command(after_help = PANE_CAPTURE_HELP)]
     Capture {
         /// Pane selector
         #[arg(long)]
@@ -235,6 +291,7 @@ enum PaneCommands {
         no_restore: bool,
     },
     /// Wait for pane output to stop changing
+    #[command(after_help = PANE_WAIT_HELP)]
     WaitIdle {
         /// Pane selector
         #[arg(long)]
@@ -253,6 +310,7 @@ enum PaneCommands {
         no_restore: bool,
     },
     /// Rename a pane
+    #[command(after_help = PANE_RENAME_HELP)]
     Rename {
         /// Pane selector
         #[arg(long)]
@@ -261,6 +319,7 @@ enum PaneCommands {
         name: String,
     },
     /// Resize a pane
+    #[command(after_help = PANE_RESIZE_HELP)]
     Resize {
         /// Pane selector
         #[arg(long)]
@@ -279,6 +338,7 @@ enum PaneCommands {
         step: u32,
     },
     /// Close a pane (refuses to close focused unless --force)
+    #[command(after_help = PANE_CLOSE_HELP)]
     Close {
         /// Pane selector
         #[arg(long)]
@@ -288,6 +348,7 @@ enum PaneCommands {
         force: bool,
     },
     /// Launch a new pane and print its selector
+    #[command(after_help = PANE_LAUNCH_HELP)]
     Launch {
         /// Direction to open the pane (right, down)
         #[arg(long)]
@@ -336,7 +397,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             commands::doctor::run(plugin, json)?;
         }
         Commands::Help => {
-            print_agent_help();
+            print_help_quickstart();
         }
         Commands::Install {
             print,
@@ -440,7 +501,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn print_agent_help() {
+fn print_help_quickstart() {
     println!("zjctl help");
     println!("==========");
     println!("{HELP_QUICKSTART}");
