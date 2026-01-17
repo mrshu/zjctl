@@ -42,6 +42,7 @@ zjctl install --auto-load
 zjctl install --load --auto-load
 zjctl install --print
 zjctl install --force
+zjctl install --no-auto-load
 ```
 
 The installer uses your platform config dir (XDG, APPDATA, or ~/.config),
@@ -57,12 +58,12 @@ zellij action launch-plugin "file:~/.config/zellij/plugins/zrpc.wasm"
 
 Accept the permissions when prompted. The plugin runs as a background service.
 
-To auto-load on startup, add to `~/.config/zellij/config.kdl` (or run
-`zjctl install --auto-load`):
+To auto-load on startup, add to `~/.config/zellij/config.kdl` (this is the
+default for `zjctl install`, disable with `--no-auto-load`):
 
 ```kdl
 load_plugins {
-    file:~/.config/zellij/plugins/zrpc.wasm
+    "file:~/.config/zellij/plugins/zrpc.wasm"
 }
 ```
 
@@ -103,6 +104,7 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 # 1) Ensure plugin is installed and responding (inside Zellij)
 zjctl install --load
 zjctl install --auto-load
+zjctl install --no-auto-load
 zjctl doctor
 
 # 2) List panes and pick a target
@@ -144,6 +146,7 @@ zjctl doctor
 zjctl install --force
 zjctl install --load
 zjctl install --auto-load
+zjctl install --no-auto-load
 ```
 
 ### Commands
@@ -161,6 +164,7 @@ zjctl status --json
 zjctl install
 zjctl install --load
 zjctl install --auto-load
+zjctl install --no-auto-load
 
 # List all panes
 zjctl panes ls
