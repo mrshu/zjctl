@@ -139,8 +139,10 @@ pub fn run(plugin: Option<&str>, json: bool) -> Result<(), Box<dyn std::error::E
         match Command::new("zellij").arg("list-sessions").output() {
             Ok(output) if output.status.success() => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
-                let sessions: Vec<&str> =
-                    stdout.lines().filter(|line| !line.trim().is_empty()).collect();
+                let sessions: Vec<&str> = stdout
+                    .lines()
+                    .filter(|line| !line.trim().is_empty())
+                    .collect();
                 if sessions.is_empty() {
                     push_check(
                         &mut checks,

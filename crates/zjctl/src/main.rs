@@ -188,11 +188,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         Commands::Doctor { json } => {
             commands::doctor::run(plugin, json)?;
         }
-        Commands::Install {
-            print,
-            force,
-            load,
-        } => {
+        Commands::Install { print, force, load } => {
             commands::install::run(plugin, print, force, load)?;
         }
         Commands::Status { json } => {

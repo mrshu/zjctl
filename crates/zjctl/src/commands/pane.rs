@@ -268,11 +268,7 @@ fn run_dump_screen(path: &Path, full: bool) -> Result<(), Box<dyn std::error::Er
         Ok(())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!(
-            "zellij action dump-screen failed: {}",
-            stderr.trim()
-        )
-        .into())
+        Err(format!("zellij action dump-screen failed: {}", stderr.trim()).into())
     }
 }
 
@@ -289,12 +285,7 @@ fn hash_bytes(bytes: &[u8]) -> u64 {
 
 fn poll_interval(idle_time: f64) -> Duration {
     let mut interval = idle_time / 4.0;
-    if interval < 0.1 {
-        interval = 0.1;
-    }
-    if interval > 1.0 {
-        interval = 1.0;
-    }
+    interval = interval.clamp(0.1, 1.0);
     Duration::from_secs_f64(interval)
 }
 

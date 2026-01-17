@@ -14,9 +14,8 @@ pub fn run(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let default_url = client::default_plugin_url();
     let plugin_url = plugin.unwrap_or(default_url.as_str());
-    let plugin_path = client::plugin_file_path(plugin_url).ok_or_else(|| {
-        format!("install only supports file: plugin URLs (got {plugin_url})")
-    })?;
+    let plugin_path = client::plugin_file_path(plugin_url)
+        .ok_or_else(|| format!("install only supports file: plugin URLs (got {plugin_url})"))?;
 
     let (install_cmd, download_cmd, launch_cmd) =
         client::plugin_install_commands(plugin_url, &plugin_path);
