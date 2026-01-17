@@ -86,6 +86,26 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 
 ## Usage
 
+### Notes and safety
+
+- `zjctl` works inside an active Zellij session (no remote mode).
+- The zrpc plugin must be installed and loaded in that session.
+- Prefer sending commands to a shell pane to avoid losing output if a process exits.
+- Use `zjctl panes ls` to confirm the target before sending input.
+
+### Typical workflow
+
+```bash
+# 1) Ensure plugin is installed and responding
+zjctl doctor
+
+# 2) List panes and pick a target
+zjctl panes ls
+
+# 3) Send a command to a pane (selector by id/title/cmd)
+zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+```
+
 ### Commands
 
 ```bash
