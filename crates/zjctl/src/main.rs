@@ -94,6 +94,7 @@ Tips:
 const PANE_SEND_HELP: &str = r#"Examples:
   # Send text + Enter (default 1s delay)
   zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+
   # Send without Enter
   zjctl pane send --pane id:terminal:3 --enter=false -- "ls -la"
 "#;
@@ -101,6 +102,7 @@ const PANE_SEND_HELP: &str = r#"Examples:
 const PANE_FOCUS_HELP: &str = r#"Examples:
   # Focus by title or id
   zjctl pane focus --pane title:server
+
   zjctl pane focus --pane id:terminal:3
 "#;
 
@@ -117,6 +119,7 @@ const PANE_ESCAPE_HELP: &str = r#"Examples:
 const PANE_CAPTURE_HELP: &str = r#"Examples:
   # Capture output
   zjctl pane capture --pane focused
+
   zjctl pane capture --pane focused --full
 "#;
 
@@ -138,12 +141,14 @@ const PANE_RESIZE_HELP: &str = r#"Examples:
 const PANE_CLOSE_HELP: &str = r#"Examples:
   # Close a pane (safe by default)
   zjctl pane close --pane id:terminal:3
+
   zjctl pane close --pane focused --force
 "#;
 
 const PANE_LAUNCH_HELP: &str = r#"Examples:
   # Launch a new pane and print its selector
   zjctl pane launch -- "zsh"
+
   zjctl pane launch --direction right -- "python"
 "#;
 

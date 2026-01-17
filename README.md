@@ -167,12 +167,12 @@ zjctl install --no-auto-load
 ### Commands
 
 ```bash
-# Agent-friendly quickstart
-zjctl help
-
 # Verify setup
 zjctl doctor
 zjctl doctor --json
+
+# Quickstart help
+zjctl help
 
 # Show focused pane status
 zjctl status
