@@ -11,6 +11,7 @@ targets the focused pane.
 - **Pane selectors**: Target panes by ID (`id:terminal:3`),
   title (`title:/regex/`), command (`cmd:cargo`), or `focused`
 - **Pane operations**: `send`, `focus`, `rename`, `resize` - all pane-addressed
+- **Launch panes**: create a pane and print its selector
 - **List panes**: `zjctl panes ls` with JSON output option
 - **Action passthrough**: `zjctl action ...` forwards to `zellij action`
 
@@ -103,6 +104,7 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 - `zjctl` works inside an active Zellij session (no remote mode).
 - The zrpc plugin must be installed and loaded in that session.
 - Prefer sending commands to a shell pane to avoid losing output if a process exits.
+  Use `zjctl pane launch -- "zsh"` to open one and capture its selector.
 - Use `zjctl panes ls` to confirm the target before sending input.
 
 ### Typical workflow
@@ -114,19 +116,22 @@ zjctl install --auto-load
 zjctl install --no-auto-load
 zjctl doctor
 
-# 2) List panes and pick a target
+# 2) Launch a shell pane if needed (captures selector)
+pane=$(zjctl pane launch -- "zsh")
+
+# 3) List panes and pick a target
 zjctl panes ls
 
-# 3) Send a command to a pane (selector by id/title/cmd)
-zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+# 4) Send a command to a pane (selector by id/title/cmd)
+zjctl pane send --pane "${pane:-id:terminal:3}" -- "ls -la\n"
 zjctl pane send --pane title:server -- "cargo run\n"
 zjctl pane send --pane cmd:/python/ -- "print('hello')\n"
 
-# 4) Focus or rename a pane if needed
+# 5) Focus or rename a pane if needed
 zjctl pane focus --pane title:server
 zjctl pane rename --pane focused "API Server"
 
-# 5) Resize the focused pane
+# 6) Resize the focused pane
 zjctl pane resize --pane focused --increase --direction right --step 5
 ```
 
@@ -191,6 +196,10 @@ zjctl pane wait-idle --pane focused --idle-time 3 --timeout 60
 # Send interrupt / escape
 zjctl pane interrupt --pane cmd:cargo
 zjctl pane escape --pane title:vim
+
+# Launch a pane and get its selector
+zjctl pane launch -- "zsh"
+zjctl pane launch --direction right -- "python"
 
 # Focus a pane
 zjctl pane focus --pane focused
