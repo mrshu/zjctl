@@ -106,6 +106,8 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 - Prefer sending commands to a shell pane to avoid losing output if a process exits.
   Use `zjctl pane launch -- "zsh"` to open one and capture its selector.
 - Use `zjctl panes ls` to confirm the target before sending input.
+- `zjctl pane send` waits 1s before pressing Enter by default; use
+  `--enter=false` or `--delay-enter 0` when needed.
 
 ### Typical workflow
 
@@ -185,6 +187,8 @@ zjctl panes ls --json
 # Send input to a pane
 zjctl pane send --pane id:terminal:3 -- "ls -la\n"
 zjctl pane send --pane title:vim -- ":w\n"
+zjctl pane send --pane title:vim --enter=false -- ":w"
+zjctl pane send --pane title:vim --delay-enter 0.5 -- ":w"
 
 # Capture pane output
 zjctl pane capture --pane focused
