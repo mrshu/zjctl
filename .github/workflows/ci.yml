@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --workspace --exclude zrpc
+      - run: cargo test --workspace --exclude zjctl-zrpc
 
   fmt:
     name: Format
@@ -45,8 +45,8 @@ jobs:
         with:
           components: clippy
           targets: wasm32-wasip1
-      - run: cargo clippy --workspace --exclude zrpc -- -D warnings
-      - run: cargo clippy -p zrpc --target wasm32-wasip1 -- -D warnings
+      - run: cargo clippy --workspace --exclude zjctl-zrpc -- -D warnings
+      - run: cargo clippy -p zjctl-zrpc --target wasm32-wasip1 -- -D warnings
 
   build-cli:
     name: Build CLI
@@ -85,7 +85,7 @@ jobs:
         with:
           targets: wasm32-wasip1
       - name: Build
-        run: cargo build --release -p zrpc --target wasm32-wasip1
+        run: cargo build --release -p zjctl-zrpc --target wasm32-wasip1
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
