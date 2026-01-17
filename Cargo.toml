@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 authors = ["zjctl contributors"]
@@ -28,4 +28,4 @@ clap = { version = "4.0", features = ["derive", "env"] }
 zellij-tile = "0.43"
 
 # Internal
-zjctl-proto = { path = "crates/zjctl-proto", version = "0.1.0" }
+zjctl-proto = { path = "crates/zjctl-proto", version = "0.1.1" }
