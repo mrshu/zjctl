@@ -37,6 +37,8 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         args: Vec<String>,
     },
+    /// Run setup checks for zjctl + zrpc
+    Doctor,
 }
 
 #[derive(Subcommand, Debug)]
@@ -112,6 +114,9 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Action { args } => {
             commands::action::run(&args)?;
+        }
+        Commands::Doctor => {
+            commands::doctor::run(plugin)?;
         }
         Commands::Panes { cmd } => match cmd {
             PanesCommands::Ls { json } => {

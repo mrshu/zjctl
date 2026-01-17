@@ -51,6 +51,12 @@ load_plugins {
 }
 ```
 
+Verify setup:
+
+```bash
+zjctl doctor
+```
+
 ### From source
 
 ```bash
@@ -71,6 +77,9 @@ cp target/wasm32-wasip1/release/zrpc.wasm ~/.config/zellij/plugins/
 ### Commands
 
 ```bash
+# Verify setup
+zjctl doctor
+
 # List all panes
 zjctl panes ls
 zjctl panes ls --json
