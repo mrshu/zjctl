@@ -345,17 +345,17 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                 start_suspended,
                 command,
             } => {
-                commands::pane::launch(
-                    plugin,
-                    direction.as_deref(),
+                let options = commands::pane::LaunchOptions {
+                    direction: direction.as_deref(),
                     floating,
-                    name.as_deref(),
-                    cwd.as_deref(),
+                    name: name.as_deref(),
+                    cwd: cwd.as_deref(),
                     close_on_exit,
                     in_place,
                     start_suspended,
-                    &command,
-                )?;
+                    command: &command,
+                };
+                commands::pane::launch(plugin, options)?;
             }
         },
     }

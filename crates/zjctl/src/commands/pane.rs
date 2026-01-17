@@ -179,35 +179,28 @@ pub fn resize(
     Ok(())
 }
 
+pub struct LaunchOptions<'a> {
+    pub direction: Option<&'a str>,
+    pub floating: bool,
+    pub name: Option<&'a str>,
+    pub cwd: Option<&'a str>,
+    pub close_on_exit: bool,
+    pub in_place: bool,
+    pub start_suspended: bool,
+    pub command: &'a [String],
+}
+
 pub fn launch(
     plugin: Option<&str>,
-    direction: Option<&str>,
-    floating: bool,
-    name: Option<&str>,
-    cwd: Option<&str>,
-    close_on_exit: bool,
-    in_place: bool,
-    start_suspended: bool,
-    command: &[String],
+    options: LaunchOptions<'_>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let before = panes::list(plugin)?;
 
-    run_new_pane_action(
-        direction,
-        floating,
-        name,
-        cwd,
-        close_on_exit,
-        in_place,
-        start_suspended,
-        command,
-    )?;
+    run_new_pane_action(&options)?;
 
     let after = panes::list(plugin)?;
     let pane = find_new_pane(&before, &after).map_err(|err| {
-        format!(
-            "unable to identify new pane ({err}); run `zjctl panes ls` to inspect"
-        )
+        format!("unable to identify new pane ({err}); run `zjctl panes ls` to inspect")
     })?;
 
     if let Some(selector) = pane_id_to_selector(&pane.id) {
@@ -235,45 +228,38 @@ fn send_raw(
     Ok(())
 }
 
-fn run_new_pane_action(
-    direction: Option<&str>,
-    floating: bool,
-    name: Option<&str>,
-    cwd: Option<&str>,
-    close_on_exit: bool,
-    in_place: bool,
-    start_suspended: bool,
-    command: &[String],
-) -> Result<(), Box<dyn std::error::Error>> {
+fn run_new_pane_action(options: &LaunchOptions<'_>) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::new("zellij");
     cmd.args(["action", "new-pane"]);
 
-    if let Some(direction) = direction {
+    if let Some(direction) = options.direction {
         cmd.args(["--direction", direction]);
     }
-    if floating {
+    if options.floating {
         cmd.arg("--floating");
     }
-    if let Some(name) = name {
+    if let Some(name) = options.name {
         cmd.args(["--name", name]);
     }
-    if let Some(cwd) = cwd {
+    if let Some(cwd) = options.cwd {
         cmd.args(["--cwd", cwd]);
     }
-    if close_on_exit {
+    if options.close_on_exit {
         cmd.arg("--close-on-exit");
     }
-    if in_place {
+    if options.in_place {
         cmd.arg("--in-place");
     }
-    if start_suspended {
+    if options.start_suspended {
         cmd.arg("--start-suspended");
     }
-    if !command.is_empty() {
-        cmd.arg("--").args(command);
+    if !options.command.is_empty() {
+        cmd.arg("--").args(options.command);
     }
 
-    let status = cmd.status().map_err(|err| format!("failed to run zellij: {err}"))?;
+    let status = cmd
+        .status()
+        .map_err(|err| format!("failed to run zellij: {err}"))?;
     if status.success() {
         Ok(())
     } else {
