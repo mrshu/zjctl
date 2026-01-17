@@ -16,17 +16,19 @@ pub fn send(
     plugin: Option<&str>,
     selector: &str,
     all: bool,
+    enter: bool,
+    delay_enter: f64,
     bytes: &[String],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let text = bytes.join(" ");
 
-    let params = serde_json::json!({
-        "selector": selector,
-        "all": all,
-        "text": text,
-    });
-
-    client::rpc_call(plugin, methods::PANE_SEND, params)?;
+    let steps = build_send_steps(&text, enter, delay_enter)?;
+    for step in steps {
+        match step {
+            SendStep::Text(text) => send_raw(plugin, selector, all, &text)?,
+            SendStep::Delay(duration) => sleep(duration),
+        }
+    }
     Ok(())
 }
 
@@ -228,6 +230,36 @@ fn send_raw(
     Ok(())
 }
 
+#[derive(Debug)]
+enum SendStep {
+    Text(String),
+    Delay(Duration),
+}
+
+fn build_send_steps(
+    text: &str,
+    enter: bool,
+    delay_enter: f64,
+) -> Result<Vec<SendStep>, Box<dyn std::error::Error>> {
+    if delay_enter < 0.0 {
+        return Err("delay_enter must be >= 0".into());
+    }
+
+    let mut steps = Vec::new();
+    if !text.is_empty() {
+        steps.push(SendStep::Text(text.to_string()));
+    }
+
+    if enter {
+        if delay_enter > 0.0 {
+            steps.push(SendStep::Delay(Duration::from_secs_f64(delay_enter)));
+        }
+        steps.push(SendStep::Text("\n".to_string()));
+    }
+
+    Ok(steps)
+}
+
 fn run_new_pane_action(options: &LaunchOptions<'_>) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::new("zellij");
     cmd.args(["action", "new-pane"]);
@@ -423,6 +455,36 @@ mod tests {
     fn poll_interval_is_clamped() {
         assert_eq!(poll_interval(0.2), Duration::from_secs_f64(0.1));
         assert_eq!(poll_interval(8.0), Duration::from_secs_f64(1.0));
+    }
+
+    #[test]
+    fn build_send_steps_with_enter_and_delay() {
+        let steps = build_send_steps("echo hi", true, 0.5).expect("steps");
+        assert_eq!(steps.len(), 3);
+        matches!(steps[0], SendStep::Text(_));
+        matches!(steps[1], SendStep::Delay(_));
+        matches!(steps[2], SendStep::Text(_));
+    }
+
+    #[test]
+    fn build_send_steps_without_enter() {
+        let steps = build_send_steps("echo hi", false, 1.0).expect("steps");
+        assert_eq!(steps.len(), 1);
+        matches!(steps[0], SendStep::Text(_));
+    }
+
+    #[test]
+    fn build_send_steps_without_delay() {
+        let steps = build_send_steps("echo hi", true, 0.0).expect("steps");
+        assert_eq!(steps.len(), 2);
+        matches!(steps[0], SendStep::Text(_));
+        matches!(steps[1], SendStep::Text(_));
+    }
+
+    #[test]
+    fn build_send_steps_rejects_negative_delay() {
+        let err = build_send_steps("echo hi", true, -1.0).expect_err("error");
+        assert_eq!(err.to_string(), "delay_enter must be >= 0");
     }
 
     #[test]

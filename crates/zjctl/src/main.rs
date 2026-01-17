@@ -2,7 +2,7 @@
 //!
 //! Provides pane-addressed operations via RPC to the zrpc plugin.
 
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 
 mod client;
 mod commands;
@@ -33,6 +33,7 @@ Plugin path:
 
 const PANE_HELP: &str = r#"Pane examples:
   zjctl pane send --pane id:terminal:3 -- "ls -la\n"
+  zjctl pane send --pane id:terminal:3 --enter=false -- "ls -la"
   zjctl pane focus --pane title:server
   zjctl pane rename --pane focused "API Server"
   zjctl pane resize --pane focused --increase --direction right --step 5
@@ -137,6 +138,12 @@ enum PaneCommands {
         /// Send to all matching panes
         #[arg(long)]
         all: bool,
+        /// Send Enter after the text (true/false)
+        #[arg(long, action = ArgAction::Set, default_value_t = true)]
+        enter: bool,
+        /// Delay before sending Enter (seconds)
+        #[arg(long, default_value = "1.0")]
+        delay_enter: f64,
         /// Bytes to send (after --)
         #[arg(last = true)]
         bytes: Vec<String>,
@@ -288,8 +295,14 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             }
         },
         Commands::Pane { cmd } => match cmd {
-            PaneCommands::Send { pane, all, bytes } => {
-                commands::pane::send(plugin, &pane, all, &bytes)?;
+            PaneCommands::Send {
+                pane,
+                all,
+                enter,
+                delay_enter,
+                bytes,
+            } => {
+                commands::pane::send(plugin, &pane, all, enter, delay_enter, &bytes)?;
             }
             PaneCommands::Focus { pane } => {
                 commands::pane::focus(plugin, &pane)?;
