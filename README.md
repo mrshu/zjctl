@@ -35,22 +35,7 @@ zjctl pane close --pane "$pane"
 
 Requires Zellij 0.43+.
 
-### CLI
-
-```bash
-curl -L https://github.com/mrshu/zjctl/releases/latest/download/zjctl-x86_64-linux.tar.gz | \
-  tar -xz -C ~/.local/bin/
-```
-
-### Plugin
-
-```bash
-mkdir -p ~/.config/zellij/plugins
-curl -L https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm \
-  -o ~/.config/zellij/plugins/zrpc.wasm
-```
-
-Or use the installer (recommended):
+### Recommended installer
 
 ```bash
 # Install plugin and add to config.kdl for auto-load (default)
@@ -71,6 +56,21 @@ zjctl install --force
 
 The installer uses your platform config dir (XDG, APPDATA, or ~/.config),
 and respects `ZELLIJ_CONFIG_FILE` or `ZELLIJ_CONFIG_DIR` when set.
+
+### CLI
+
+```bash
+curl -L https://github.com/mrshu/zjctl/releases/latest/download/zjctl-x86_64-linux.tar.gz | \
+  tar -xz -C ~/.local/bin/
+```
+
+### Plugin
+
+```bash
+mkdir -p ~/.config/zellij/plugins
+curl -L https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm \
+  -o ~/.config/zellij/plugins/zrpc.wasm
+```
 
 ### Load the plugin
 
