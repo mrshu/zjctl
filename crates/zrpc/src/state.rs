@@ -97,31 +97,51 @@ impl PluginState {
 
     /// Update tab state from TabUpdate event
     pub fn update_tabs(&mut self, tabs: Vec<TabInfo>) {
-        self.tabs = tabs
-            .into_iter()
-            .enumerate()
-            .map(|(index, tab)| TabEntry {
-                index,
+        let max_position = tabs.iter().map(|t| t.position).max().unwrap_or(0);
+        let mut entries: Vec<Option<TabEntry>> = vec![None; max_position.saturating_add(1)];
+
+        for tab in tabs {
+            entries[tab.position] = Some(TabEntry {
+                index: tab.position,
                 name: tab.name,
                 active: tab.active,
+            });
+        }
+
+        self.tabs = entries
+            .into_iter()
+            .enumerate()
+            .map(|(index, entry)| {
+                entry.unwrap_or(TabEntry {
+                    index,
+                    name: format!("Tab {}", index),
+                    active: false,
+                })
             })
             .collect();
     }
 
+    pub fn active_tab_index(&self) -> Option<usize> {
+        self.tabs.iter().find(|t| t.active).map(|t| t.index)
+    }
+
     /// List all panes for the panes.list command
-    pub fn list_panes(&self) -> Vec<PaneListItem> {
+    pub fn list_panes(&self, focused_id: Option<&str>) -> Vec<PaneListItem> {
         self.panes
             .values()
-            .map(|p| PaneListItem {
-                id: p.id_string(),
-                pane_type: if p.is_plugin { "plugin" } else { "terminal" }.to_string(),
-                title: p.title.clone(),
-                command: p.command.clone(),
-                tab_index: p.tab_index,
-                tab_name: p.tab_name.clone(),
-                focused: p.focused,
-                floating: p.floating,
-                suppressed: p.suppressed,
+            .map(|p| {
+                let id = p.id_string();
+                PaneListItem {
+                    focused: focused_id == Some(id.as_str()),
+                    id,
+                    pane_type: if p.is_plugin { "plugin" } else { "terminal" }.to_string(),
+                    title: p.title.clone(),
+                    command: p.command.clone(),
+                    tab_index: p.tab_index,
+                    tab_name: p.tab_name.clone(),
+                    floating: p.floating,
+                    suppressed: p.suppressed,
+                }
             })
             .collect()
     }

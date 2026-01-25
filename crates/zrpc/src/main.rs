@@ -105,6 +105,32 @@ impl ZellijPlugin for ZrpcPlugin {
 }
 
 impl ZrpcPlugin {
+    fn focused_pane(&self) -> Option<&state::PaneEntry> {
+        let active_tab = self.state.active_tab_index()?;
+
+        let mut terminals: Vec<_> = self
+            .state
+            .panes
+            .values()
+            .filter(|p| {
+                p.tab_index == active_tab && p.focused && !p.is_plugin && !p.suppressed
+            })
+            .collect();
+        terminals.sort_by_key(|p| p.numeric_id);
+        if let Some(pane) = terminals.first() {
+            return Some(*pane);
+        }
+
+        let mut any: Vec<_> = self
+            .state
+            .panes
+            .values()
+            .filter(|p| p.tab_index == active_tab && p.focused && !p.suppressed)
+            .collect();
+        any.sort_by_key(|p| (p.is_plugin, p.numeric_id));
+        any.first().copied()
+    }
+
     fn handle_request(&mut self, pipe_id: &str, request: RpcRequest) {
         let result = match request.method.as_str() {
             methods::PANES_LIST => self.handle_panes_list(&request),
@@ -132,7 +158,9 @@ impl ZrpcPlugin {
     }
 
     fn handle_panes_list(&self, _request: &RpcRequest) -> Result<serde_json::Value, RpcError> {
-        let panes = self.state.list_panes();
+        let focused_id = self.focused_pane().map(|p| p.id_string());
+        let panes = self.state.list_panes(focused_id.as_deref());
+
         serde_json::to_value(&panes).map_err(|e| {
             RpcError::new(
                 RpcErrorCode::Internal,
@@ -329,8 +357,7 @@ impl ZrpcPlugin {
     ) -> Result<Vec<&state::PaneEntry>, RpcError> {
         match selector {
             PaneSelector::Focused => {
-                let focused: Vec<_> = self.state.panes.values().filter(|p| p.focused).collect();
-                Ok(focused)
+                Ok(self.focused_pane().into_iter().collect())
             }
             PaneSelector::Id { pane_type, id } => {
                 let is_plugin = matches!(pane_type, PaneType::Plugin);
