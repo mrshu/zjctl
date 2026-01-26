@@ -130,9 +130,18 @@ impl PluginState {
     }
 
     pub fn update_clients(&mut self, clients: Vec<ClientInfo>) {
+        if clients.is_empty() {
+            self.current_client_pane_id = None;
+            return;
+        }
+
+        // Prefer Zellij's "current client" marker when it exists, otherwise fall back to a
+        // deterministic client (helps in single-client sessions where is_current_client can be
+        // false for all entries when queried from a background plugin).
         self.current_client_pane_id = clients
-            .into_iter()
+            .iter()
             .find(|c| c.is_current_client)
+            .or_else(|| clients.iter().min_by_key(|c| c.client_id))
             .map(|c| c.pane_id);
     }
 
