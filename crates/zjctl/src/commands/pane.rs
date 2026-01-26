@@ -155,38 +155,49 @@ pub fn rename(
     Ok(())
 }
 
+pub struct ResizeOptions<'a> {
+    pub selector: &'a str,
+    pub increase: bool,
+    pub decrease: bool,
+    pub cols: Option<usize>,
+    pub rows: Option<usize>,
+    pub direction: Option<&'a str>,
+    pub step: u32,
+    pub max_steps: u32,
+}
+
 pub fn resize(
     plugin: Option<&str>,
-    selector: &str,
-    increase: bool,
-    decrease: bool,
-    cols: Option<usize>,
-    rows: Option<usize>,
-    direction: Option<&str>,
-    step: u32,
-    max_steps: u32,
+    options: ResizeOptions<'_>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if cols.is_some() || rows.is_some() {
-        return resize_to(plugin, selector, cols, rows, direction, max_steps);
+    if options.cols.is_some() || options.rows.is_some() {
+        return resize_to(
+            plugin,
+            options.selector,
+            options.cols,
+            options.rows,
+            options.direction,
+            options.max_steps,
+        );
     }
 
-    if step == 0 {
+    if options.step == 0 {
         return Err("step must be >= 1".into());
     }
 
-    let resize_type = if increase {
+    let resize_type = if options.increase {
         "increase"
-    } else if decrease {
+    } else if options.decrease {
         "decrease"
     } else {
         return Err("must specify --increase or --decrease".into());
     };
 
     let params = serde_json::json!({
-        "selector": selector,
+        "selector": options.selector,
         "resize_type": resize_type,
-        "direction": direction,
-        "step": step,
+        "direction": options.direction,
+        "step": options.step,
     });
 
     client::rpc_call(plugin, methods::PANE_RESIZE, params)?;
@@ -282,10 +293,18 @@ fn resize_to(
         let resizing_cols = !done_cols;
         let resize_type = if resizing_cols {
             let target = cols.expect("cols set when resizing cols");
-            if current_cols < target { "increase" } else { "decrease" }
+            if current_cols < target {
+                "increase"
+            } else {
+                "decrease"
+            }
         } else {
             let target = rows.expect("rows set when resizing rows");
-            if current_rows < target { "increase" } else { "decrease" }
+            if current_rows < target {
+                "increase"
+            } else {
+                "decrease"
+            }
         };
 
         // If --direction is omitted, try both relevant borders (eg. rightmost panes need left).

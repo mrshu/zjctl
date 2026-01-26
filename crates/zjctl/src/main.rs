@@ -495,14 +495,16 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             } => {
                 commands::pane::resize(
                     plugin,
-                    &pane,
-                    increase,
-                    decrease,
-                    cols,
-                    rows,
-                    direction.as_deref(),
-                    step,
-                    max_steps,
+                    commands::pane::ResizeOptions {
+                        selector: &pane,
+                        increase,
+                        decrease,
+                        cols,
+                        rows,
+                        direction: direction.as_deref(),
+                        step,
+                        max_steps,
+                    },
                 )?;
             }
             PaneCommands::Close { pane, force } => {

@@ -135,9 +135,11 @@ impl ZrpcPlugin {
                 PaneId::Terminal(id) => (false, id),
                 PaneId::Plugin(id) => (true, id),
             };
-            if let Some(found) = self.state.panes.values().find(|p| {
-                p.is_plugin == is_plugin && p.numeric_id == numeric_id && !p.suppressed
-            }) {
+            if let Some(found) =
+                self.state.panes.values().find(|p| {
+                    p.is_plugin == is_plugin && p.numeric_id == numeric_id && !p.suppressed
+                })
+            {
                 return Some(found);
             }
         }
