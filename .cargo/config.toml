@@ -1,5 +1,9 @@
 # Build configuration for zjctl
 
+[alias]
+# Ensure the plugin is always built for WASI (wasm32-wasip1).
+build-plugin = "build --release -p zjctl-zrpc --target wasm32-wasip1"
+install-plugin = "install zjctl-zrpc --target wasm32-wasip1"
+
 [build]
-# Target for the zrpc plugin - use wasm32-wasip1 for WASI
-# Run with: cargo build -p zrpc --target wasm32-wasip1 --release
+# The CLI is a native binary; the plugin is WASM. Don't set a global default target here.

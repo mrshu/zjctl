@@ -2,6 +2,12 @@
 //!
 //! Receives commands via Zellij pipes and executes pane operations.
 
+#[cfg(not(all(target_arch = "wasm32", target_os = "wasi")))]
+compile_error!(
+    "zjctl-zrpc is a Zellij plugin and must be built for WASI.\n\
+Use: cargo build -p zjctl-zrpc --target wasm32-wasip1 --release"
+);
+
 use std::collections::BTreeMap;
 use zellij_tile::prelude::*;
 use zjctl_proto::{
