@@ -12,6 +12,7 @@ repository.workspace = true
 [[bin]]
 name = "zrpc"
 path = "src/main.rs"
+test = false
 
 [dependencies]
 zjctl-proto.workspace = true
