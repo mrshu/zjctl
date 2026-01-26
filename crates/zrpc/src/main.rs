@@ -14,6 +14,7 @@ use state::PluginState;
 
 /// Expected pipe name for RPC messages
 const RPC_PIPE_NAME: &str = "zjctl-rpc";
+const CLIENT_POLL_SECS: f64 = 0.2;
 
 register_plugin!(ZrpcPlugin);
 
@@ -42,11 +43,13 @@ impl ZellijPlugin for ZrpcPlugin {
             EventType::PaneUpdate,
             EventType::TabUpdate,
             EventType::ListClients,
+            EventType::Timer,
             EventType::PermissionRequestResult,
         ]);
 
         // Prime client focus state
         list_clients();
+        set_timeout(CLIENT_POLL_SECS);
     }
 
     fn update(&mut self, event: Event) -> bool {
@@ -59,6 +62,10 @@ impl ZellijPlugin for ZrpcPlugin {
             }
             Event::ListClients(clients) => {
                 self.state.update_clients(clients);
+            }
+            Event::Timer(_) => {
+                list_clients();
+                set_timeout(CLIENT_POLL_SECS);
             }
             Event::PermissionRequestResult(_) => {
                 // After permissions are granted, we can query client focus reliably.
@@ -122,11 +129,9 @@ impl ZrpcPlugin {
                 PaneId::Terminal(id) => (false, id),
                 PaneId::Plugin(id) => (true, id),
             };
-            if let Some(found) =
-                self.state.panes.values().find(|p| {
-                    p.is_plugin == is_plugin && p.numeric_id == numeric_id && !p.suppressed
-                })
-            {
+            if let Some(found) = self.state.panes.values().find(|p| {
+                p.is_plugin == is_plugin && p.numeric_id == numeric_id && !p.suppressed
+            }) {
                 return Some(found);
             }
         }
