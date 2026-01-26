@@ -11,6 +11,7 @@ use std::process::Command;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use zjctl_proto::methods;
+use zjctl_proto::{PaneSelector, PaneType};
 
 pub fn send(
     plugin: Option<&str>,
@@ -159,9 +160,20 @@ pub fn resize(
     selector: &str,
     increase: bool,
     decrease: bool,
+    cols: Option<usize>,
+    rows: Option<usize>,
     direction: Option<&str>,
     step: u32,
+    max_steps: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if cols.is_some() || rows.is_some() {
+        return resize_to(plugin, selector, cols, rows, direction, max_steps);
+    }
+
+    if step == 0 {
+        return Err("step must be >= 1".into());
+    }
+
     let resize_type = if increase {
         "increase"
     } else if decrease {
@@ -179,6 +191,182 @@ pub fn resize(
 
     client::rpc_call(plugin, methods::PANE_RESIZE, params)?;
     Ok(())
+}
+
+fn resize_to(
+    plugin: Option<&str>,
+    selector: &str,
+    cols: Option<usize>,
+    rows: Option<usize>,
+    direction: Option<&str>,
+    max_steps: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if cols.is_none() && rows.is_none() {
+        return Err("must specify --cols and/or --rows".into());
+    }
+    if max_steps == 0 {
+        return Err("max_steps must be >= 1".into());
+    }
+
+    let parsed: PaneSelector = selector
+        .parse::<PaneSelector>()
+        .map_err(|e| e.to_string())?;
+    let panes = panes::list(plugin)?;
+
+    let pane = match parsed {
+        PaneSelector::Focused => panes
+            .iter()
+            .find(|p| p.focused)
+            .cloned()
+            .ok_or_else(|| "no focused pane".to_string())?,
+        PaneSelector::Id { pane_type, id } => {
+            let id_str = id_string(pane_type, id);
+            panes
+                .iter()
+                .find(|p| p.id == id_str)
+                .cloned()
+                .ok_or_else(|| format!("pane not found: {}", selector))?
+        }
+        _ => {
+            return Err(
+                "when using --cols/--rows, --pane must be an explicit id selector or 'focused'"
+                    .into(),
+            );
+        }
+    };
+
+    if cols.is_some() && rows.is_some() && direction.is_some() {
+        return Err(
+            "when using both --cols and --rows, omit --direction (run twice instead)".into(),
+        );
+    }
+    if let (Some(_), Some(dir)) = (cols, direction) {
+        if !matches!(dir, "left" | "right") {
+            return Err("--cols only supports --direction left/right (or omit --direction)".into());
+        }
+    }
+    if let (Some(_), Some(dir)) = (rows, direction) {
+        if !matches!(dir, "up" | "down") {
+            return Err("--rows only supports --direction up/down (or omit --direction)".into());
+        }
+    }
+
+    let target_selector = pane_id_to_selector(&pane.id).unwrap_or_else(|| selector.to_string());
+
+    let mut last_rows = 0usize;
+    let mut last_cols = 0usize;
+    let mut unchanged_steps = 0u32;
+
+    for _ in 0..max_steps {
+        let panes = panes::list(plugin)?;
+        let current = panes
+            .iter()
+            .find(|p| pane_matches_id(&target_selector, p))
+            .cloned()
+            .ok_or_else(|| format!("pane not found: {target_selector}"))?;
+
+        let current_rows = current.rows;
+        let current_cols = current.cols;
+        if current_rows == 0 || current_cols == 0 {
+            return Err("pane size unavailable (rows/cols are 0)".into());
+        }
+
+        let done_cols = cols.map(|c| current_cols == c).unwrap_or(true);
+        let done_rows = rows.map(|r| current_rows == r).unwrap_or(true);
+        if done_cols && done_rows {
+            return Ok(());
+        }
+
+        let (resize_type, dim_dir) = if !done_cols {
+            let target = cols.expect("cols set when not done_cols");
+            (
+                if current_cols < target {
+                    "increase"
+                } else {
+                    "decrease"
+                },
+                direction,
+            )
+        } else {
+            let target = rows.expect("rows set when not done_rows");
+            (
+                if current_rows < target {
+                    "increase"
+                } else {
+                    "decrease"
+                },
+                direction,
+            )
+        };
+
+        resize_tick(plugin, &target_selector, resize_type, dim_dir)?;
+        sleep(Duration::from_millis(50));
+
+        let panes = panes::list(plugin)?;
+        let after = panes
+            .iter()
+            .find(|p| pane_matches_id(&target_selector, p))
+            .cloned()
+            .ok_or_else(|| format!("pane not found: {target_selector}"))?;
+
+        if after.rows == current_rows && after.cols == current_cols {
+            unchanged_steps += 1;
+            if unchanged_steps >= 5 {
+                return Err(format!(
+                    "pane size did not change after {unchanged_steps} resize attempts; current {}x{}, target cols={:?} rows={:?}",
+                    after.cols, after.rows, cols, rows
+                )
+                .into());
+            }
+        } else {
+            unchanged_steps = 0;
+        }
+
+        last_rows = after.rows;
+        last_cols = after.cols;
+    }
+
+    Err(format!(
+        "unable to reach target size within max_steps={max_steps} (last {}x{}, target cols={:?} rows={:?})",
+        last_cols, last_rows, cols, rows
+    )
+    .into())
+}
+
+fn resize_tick(
+    plugin: Option<&str>,
+    selector: &str,
+    resize_type: &str,
+    direction: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let params = serde_json::json!({
+        "selector": selector,
+        "resize_type": resize_type,
+        "direction": direction,
+        "step": 1,
+    });
+    client::rpc_call(plugin, methods::PANE_RESIZE, params)?;
+    Ok(())
+}
+
+fn id_string(pane_type: PaneType, id: u32) -> String {
+    match pane_type {
+        PaneType::Terminal => format!("terminal:{id}"),
+        PaneType::Plugin => format!("plugin:{id}"),
+    }
+}
+
+fn pane_matches_id(selector: &str, pane: &panes::PaneInfo) -> bool {
+    if selector == "focused" {
+        return pane.focused;
+    }
+    if let Some(id_sel) = selector.strip_prefix("id:") {
+        let mut parts = id_sel.split(':');
+        let pane_type = parts.next().unwrap_or("");
+        let numeric = parts.next().unwrap_or("");
+        return parts.next().is_none() && pane.id == format!("{pane_type}:{numeric}");
+    }
+    false
 }
 
 pub fn close(
@@ -471,6 +659,8 @@ mod tests {
             focused: false,
             floating: false,
             suppressed: false,
+            rows: 0,
+            cols: 0,
         }
     }
 

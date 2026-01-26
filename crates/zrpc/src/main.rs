@@ -112,9 +112,7 @@ impl ZrpcPlugin {
             .state
             .panes
             .values()
-            .filter(|p| {
-                p.tab_index == active_tab && p.focused && !p.is_plugin && !p.suppressed
-            })
+            .filter(|p| p.tab_index == active_tab && p.focused && !p.is_plugin && !p.suppressed)
             .collect();
         terminals.sort_by_key(|p| p.numeric_id);
         if let Some(pane) = terminals.first() {
@@ -356,9 +354,7 @@ impl ZrpcPlugin {
         selector: &PaneSelector,
     ) -> Result<Vec<&state::PaneEntry>, RpcError> {
         match selector {
-            PaneSelector::Focused => {
-                Ok(self.focused_pane().into_iter().collect())
-            }
+            PaneSelector::Focused => Ok(self.focused_pane().into_iter().collect()),
             PaneSelector::Id { pane_type, id } => {
                 let is_plugin = matches!(pane_type, PaneType::Plugin);
                 let found: Vec<_> = self
@@ -393,16 +389,14 @@ impl ZrpcPlugin {
                 Ok(matching)
             }
             PaneSelector::TabIndex { tab, index } => {
-                // Find panes in the given tab at the given index
-                let matching: Vec<_> = self
+                let mut panes: Vec<_> = self
                     .state
                     .panes
                     .values()
                     .filter(|p| p.tab_index == *tab)
-                    .enumerate()
-                    .filter_map(|(i, p)| if i == *index { Some(p) } else { None })
                     .collect();
-                Ok(matching)
+                panes.sort_by_key(|p| (p.is_plugin, p.numeric_id));
+                Ok(panes.get(*index).copied().into_iter().collect())
             }
         }
     }

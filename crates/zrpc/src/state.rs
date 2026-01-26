@@ -34,6 +34,10 @@ pub struct PaneEntry {
     pub floating: bool,
     /// Whether this pane is suppressed
     pub suppressed: bool,
+    /// Pane content rows (terminal size)
+    pub rows: usize,
+    /// Pane content columns (terminal size)
+    pub cols: usize,
 }
 
 impl PaneEntry {
@@ -88,6 +92,8 @@ impl PluginState {
                     focused: pane.is_focused,
                     floating: pane.is_floating,
                     suppressed: pane.is_suppressed,
+                    rows: pane.pane_content_rows,
+                    cols: pane.pane_content_columns,
                 };
                 let key = entry.id_string();
                 self.panes.insert(key, entry);
@@ -141,6 +147,8 @@ impl PluginState {
                     tab_name: p.tab_name.clone(),
                     floating: p.floating,
                     suppressed: p.suppressed,
+                    rows: p.rows,
+                    cols: p.cols,
                 }
             })
             .collect()
@@ -159,4 +167,6 @@ pub struct PaneListItem {
     pub focused: bool,
     pub floating: bool,
     pub suppressed: bool,
+    pub rows: usize,
+    pub cols: usize,
 }

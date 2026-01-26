@@ -136,6 +136,10 @@ const PANE_RENAME_HELP: &str = r#"Examples:
 const PANE_RESIZE_HELP: &str = r#"Examples:
   # Resize the focused pane
   zjctl pane resize --pane focused --increase --direction right --step 5
+
+  # Resize to an exact terminal size
+  zjctl pane resize --pane focused --cols 120
+  zjctl pane resize --pane focused --rows 40
 "#;
 
 const PANE_CLOSE_HELP: &str = r#"Examples:
@@ -330,17 +334,26 @@ enum PaneCommands {
         #[arg(long)]
         pane: String,
         /// Increase pane size
-        #[arg(long, conflicts_with = "decrease")]
+        #[arg(long, conflicts_with_all = ["decrease", "cols", "rows"])]
         increase: bool,
         /// Decrease pane size
-        #[arg(long, conflicts_with = "increase")]
+        #[arg(long, conflicts_with_all = ["increase", "cols", "rows"])]
         decrease: bool,
+        /// Resize to a target number of columns (terminal size)
+        #[arg(long, conflicts_with_all = ["increase", "decrease", "step"])]
+        cols: Option<usize>,
+        /// Resize to a target number of rows (terminal size)
+        #[arg(long, conflicts_with_all = ["increase", "decrease", "step"])]
+        rows: Option<usize>,
         /// Direction (left, right, up, down)
         #[arg(long)]
         direction: Option<String>,
         /// Step size
         #[arg(long, default_value = "1")]
         step: u32,
+        /// Maximum resize steps when using --cols/--rows
+        #[arg(long, default_value = "200")]
+        max_steps: u32,
     },
     /// Close a pane (refuses to close focused unless --force)
     #[command(after_help = PANE_CLOSE_HELP)]
@@ -464,16 +477,22 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                 pane,
                 increase,
                 decrease,
+                cols,
+                rows,
                 direction,
                 step,
+                max_steps,
             } => {
                 commands::pane::resize(
                     plugin,
                     &pane,
                     increase,
                     decrease,
+                    cols,
+                    rows,
                     direction.as_deref(),
                     step,
+                    max_steps,
                 )?;
             }
             PaneCommands::Close { pane, force } => {

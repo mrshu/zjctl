@@ -16,6 +16,10 @@ pub struct PaneInfo {
     pub focused: bool,
     pub floating: bool,
     pub suppressed: bool,
+    #[serde(default)]
+    pub rows: usize,
+    #[serde(default)]
+    pub cols: usize,
 }
 
 pub fn list(plugin: Option<&str>) -> Result<Vec<PaneInfo>, Box<dyn std::error::Error>> {
