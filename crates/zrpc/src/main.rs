@@ -41,8 +41,12 @@ impl ZellijPlugin for ZrpcPlugin {
         subscribe(&[
             EventType::PaneUpdate,
             EventType::TabUpdate,
+            EventType::ListClients,
             EventType::PermissionRequestResult,
         ]);
+
+        // Prime client focus state
+        list_clients();
     }
 
     fn update(&mut self, event: Event) -> bool {
@@ -52,6 +56,13 @@ impl ZellijPlugin for ZrpcPlugin {
             }
             Event::TabUpdate(tabs) => {
                 self.state.update_tabs(tabs);
+            }
+            Event::ListClients(clients) => {
+                self.state.update_clients(clients);
+            }
+            Event::PermissionRequestResult(_) => {
+                // After permissions are granted, we can query client focus reliably.
+                list_clients();
             }
             _ => {}
         }
@@ -106,15 +117,51 @@ impl ZellijPlugin for ZrpcPlugin {
 
 impl ZrpcPlugin {
     fn focused_pane(&self) -> Option<&state::PaneEntry> {
-        let active_tab = self.state.active_tab_index()?;
+        if let Some(pane_id) = self.state.current_client_pane_id {
+            let (is_plugin, numeric_id) = match pane_id {
+                PaneId::Terminal(id) => (false, id),
+                PaneId::Plugin(id) => (true, id),
+            };
+            if let Some(found) =
+                self.state.panes.values().find(|p| {
+                    p.is_plugin == is_plugin && p.numeric_id == numeric_id && !p.suppressed
+                })
+            {
+                return Some(found);
+            }
+        }
 
+        let active_tab = self.state.active_tab_index();
+        if let Some(active_tab) = active_tab {
+            let mut terminals: Vec<_> = self
+                .state
+                .panes
+                .values()
+                .filter(|p| p.tab_index == active_tab && p.focused && !p.is_plugin && !p.suppressed)
+                .collect();
+            terminals.sort_by_key(|p| p.numeric_id);
+            if let Some(pane) = terminals.first() {
+                return Some(*pane);
+            }
+
+            let mut any: Vec<_> = self
+                .state
+                .panes
+                .values()
+                .filter(|p| p.tab_index == active_tab && p.focused && !p.suppressed)
+                .collect();
+            any.sort_by_key(|p| (p.is_plugin, p.numeric_id));
+            return any.first().copied();
+        }
+
+        // Fallback: pick any focused terminal pane deterministically (tab focus is per-tab).
         let mut terminals: Vec<_> = self
             .state
             .panes
             .values()
-            .filter(|p| p.tab_index == active_tab && p.focused && !p.is_plugin && !p.suppressed)
+            .filter(|p| p.focused && !p.is_plugin && !p.suppressed)
             .collect();
-        terminals.sort_by_key(|p| p.numeric_id);
+        terminals.sort_by_key(|p| (p.tab_index, p.numeric_id));
         if let Some(pane) = terminals.first() {
             return Some(*pane);
         }
@@ -123,9 +170,9 @@ impl ZrpcPlugin {
             .state
             .panes
             .values()
-            .filter(|p| p.tab_index == active_tab && p.focused && !p.suppressed)
+            .filter(|p| p.focused && !p.suppressed)
             .collect();
-        any.sort_by_key(|p| (p.is_plugin, p.numeric_id));
+        any.sort_by_key(|p| (p.tab_index, p.is_plugin, p.numeric_id));
         any.first().copied()
     }
 

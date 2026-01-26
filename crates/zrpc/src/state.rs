@@ -11,6 +11,8 @@ pub struct PluginState {
     pub panes: HashMap<String, PaneEntry>,
     /// Tab information
     pub tabs: Vec<TabEntry>,
+    /// Focused pane of the current client (if known)
+    pub current_client_pane_id: Option<PaneId>,
 }
 
 /// Information about a single pane
@@ -125,6 +127,13 @@ impl PluginState {
                 })
             })
             .collect();
+    }
+
+    pub fn update_clients(&mut self, clients: Vec<ClientInfo>) {
+        self.current_client_pane_id = clients
+            .into_iter()
+            .find(|c| c.is_current_client)
+            .map(|c| c.pane_id);
     }
 
     pub fn active_tab_index(&self) -> Option<usize> {
