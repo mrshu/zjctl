@@ -89,6 +89,21 @@ impl FromStr for PaneSelector {
             return Ok(PaneSelector::Focused);
         }
 
+        // terminal:N or plugin:N (shorthand for id:terminal:N / id:plugin:N)
+        {
+            let parts: Vec<&str> = s.splitn(2, ':').collect();
+            if parts.len() == 2 && (parts[0] == "terminal" || parts[0] == "plugin") {
+                let pane_type = PaneType::from_str(parts[0])?;
+                if !parts[1].chars().all(|c| c.is_ascii_digit()) {
+                    return Err(SelectorError::InvalidPaneId(parts[1].to_string()));
+                }
+                let id: u32 = parts[1]
+                    .parse()
+                    .map_err(|_| SelectorError::InvalidPaneId(parts[1].to_string()))?;
+                return Ok(PaneSelector::Id { pane_type, id });
+            }
+        }
+
         // id:terminal:N or id:plugin:N
         if let Some(rest) = s.strip_prefix("id:") {
             let parts: Vec<&str> = rest.splitn(2, ':').collect();
@@ -179,8 +194,32 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_id_terminal_shorthand() {
+        let sel: PaneSelector = "terminal:42".parse().unwrap();
+        match sel {
+            PaneSelector::Id { pane_type, id } => {
+                assert_eq!(pane_type, PaneType::Terminal);
+                assert_eq!(id, 42);
+            }
+            _ => panic!("expected Id selector"),
+        }
+    }
+
+    #[test]
     fn test_parse_id_plugin() {
         let sel: PaneSelector = "id:plugin:7".parse().unwrap();
+        match sel {
+            PaneSelector::Id { pane_type, id } => {
+                assert_eq!(pane_type, PaneType::Plugin);
+                assert_eq!(id, 7);
+            }
+            _ => panic!("expected Id selector"),
+        }
+    }
+
+    #[test]
+    fn test_parse_id_plugin_shorthand() {
+        let sel: PaneSelector = "plugin:7".parse().unwrap();
         match sel {
             PaneSelector::Id { pane_type, id } => {
                 assert_eq!(pane_type, PaneType::Plugin);
