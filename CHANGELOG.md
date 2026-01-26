@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Building `zjctl-zrpc` for a non-WASI target now fails fast with a clear error message (instead of a linker error).
+- CI now checks `zjctl-zrpc` with the correct `wasm32-wasip1` target.
 
 ## [0.1.2] - 2026-01-26
 

@@ -16,7 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo check --workspace
+        with:
+          targets: wasm32-wasip1
+      - run: cargo check --workspace --exclude zjctl-zrpc
+      - run: cargo check -p zjctl-zrpc --target wasm32-wasip1
 
   test:
     name: Test
