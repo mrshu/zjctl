@@ -256,6 +256,8 @@ fn resize_to(
     let mut last_rows = 0usize;
     let mut last_cols = 0usize;
     let mut unchanged_steps = 0u32;
+    let mut chosen_cols_dir: Option<&'static str> = None;
+    let mut chosen_rows_dir: Option<&'static str> = None;
 
     for _ in 0..max_steps {
         let panes = panes::list(plugin)?;
@@ -277,37 +279,64 @@ fn resize_to(
             return Ok(());
         }
 
-        let (resize_type, dim_dir) = if !done_cols {
-            let target = cols.expect("cols set when not done_cols");
-            (
-                if current_cols < target {
-                    "increase"
-                } else {
-                    "decrease"
-                },
-                direction,
-            )
+        let resizing_cols = !done_cols;
+        let resize_type = if resizing_cols {
+            let target = cols.expect("cols set when resizing cols");
+            if current_cols < target { "increase" } else { "decrease" }
         } else {
-            let target = rows.expect("rows set when not done_rows");
-            (
-                if current_rows < target {
-                    "increase"
-                } else {
-                    "decrease"
-                },
-                direction,
-            )
+            let target = rows.expect("rows set when resizing rows");
+            if current_rows < target { "increase" } else { "decrease" }
         };
 
-        resize_tick(plugin, &target_selector, resize_type, dim_dir)?;
-        sleep(Duration::from_millis(50));
+        // If --direction is omitted, try both relevant borders (eg. rightmost panes need left).
+        let mut dirs_to_try: Vec<Option<&str>> = Vec::new();
+        if let Some(dir) = direction {
+            dirs_to_try.push(Some(dir));
+        } else if resizing_cols {
+            if let Some(dir) = chosen_cols_dir {
+                dirs_to_try.push(Some(dir));
+            } else {
+                dirs_to_try.push(Some("left"));
+                dirs_to_try.push(Some("right"));
+            }
+        } else if let Some(dir) = chosen_rows_dir {
+            dirs_to_try.push(Some(dir));
+        } else {
+            dirs_to_try.push(Some("up"));
+            dirs_to_try.push(Some("down"));
+        }
 
-        let panes = panes::list(plugin)?;
-        let after = panes
-            .iter()
-            .find(|p| pane_matches_id(&target_selector, p))
-            .cloned()
-            .ok_or_else(|| format!("pane not found: {target_selector}"))?;
+        let mut after = None;
+        for dim_dir in dirs_to_try {
+            resize_tick(plugin, &target_selector, resize_type, dim_dir)?;
+            sleep(Duration::from_millis(50));
+
+            let panes = panes::list(plugin)?;
+            let candidate = panes
+                .iter()
+                .find(|p| pane_matches_id(&target_selector, p))
+                .cloned()
+                .ok_or_else(|| format!("pane not found: {target_selector}"))?;
+
+            // Only try the next direction if nothing changed.
+            if candidate.rows == current_rows && candidate.cols == current_cols {
+                after = Some(candidate);
+                continue;
+            }
+
+            if direction.is_none() {
+                if resizing_cols {
+                    chosen_cols_dir = dim_dir.map(|d| if d == "left" { "left" } else { "right" });
+                } else {
+                    chosen_rows_dir = dim_dir.map(|d| if d == "up" { "up" } else { "down" });
+                }
+            }
+
+            after = Some(candidate);
+            break;
+        }
+
+        let after = after.expect("at least one direction attempted");
 
         if after.rows == current_rows && after.cols == current_cols {
             unchanged_steps += 1;
