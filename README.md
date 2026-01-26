@@ -175,6 +175,10 @@ zjctl help
 zjctl action new-pane
 ```
 
+`wait-idle` is useful after `pane send`: it polls the target pane’s rendered
+output until it stops changing for `--idle-time` seconds (or errors after
+`--timeout`).
+
 ### Automation tips
 
 - Use `zjctl panes ls --json` for selection logic.

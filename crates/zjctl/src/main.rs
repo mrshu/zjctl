@@ -18,6 +18,7 @@ const HELP_AFTER: &str = r#"Quickstart:
 
   zjctl pane send --pane "$pane" -- "ls -la\n"
 
+  # Wait until output stops changing for 2s (or timeout after 30s)
   zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
 
   zjctl pane capture --pane "$pane"
@@ -80,6 +81,8 @@ const HELP_QUICKSTART: &str = r#"Quickstart:
   zjctl pane send --pane "$pane" -- "ls -la\n"
 
   # Wait for output, capture it, then close the pane
+  # `wait-idle` polls rendered output until it stops changing for `--idle-time`
+  # seconds (it restores your previous focus by default; use --no-restore to keep focus).
   zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
 
   zjctl pane capture --pane "$pane"
@@ -123,8 +126,14 @@ const PANE_CAPTURE_HELP: &str = r#"Examples:
   zjctl pane capture --pane focused --full
 "#;
 
-const PANE_WAIT_HELP: &str = r#"Examples:
-  # Wait for output to settle
+const PANE_WAIT_HELP: &str = r#"What it does:
+  `wait-idle` watches a pane’s output and returns once it stops changing for at
+  least `--idle-time` seconds (or errors after `--timeout`). It focuses the pane
+  while checking; by default it restores your previous focus (use `--no-restore`
+  to keep focus on the pane).
+
+Examples:
+  # After sending a command, wait until output settles
   zjctl pane wait-idle --pane focused --idle-time 2 --timeout 30
 "#;
 
@@ -163,7 +172,8 @@ const PANE_LAUNCH_HELP: &str = r#"Examples:
     version,
     about,
     long_about = None,
-    after_help = HELP_AFTER
+    after_help = HELP_AFTER,
+    disable_help_subcommand = true
 )]
 pub struct Cli {
     /// Path to the zrpc plugin wasm file
@@ -305,16 +315,16 @@ enum PaneCommands {
         /// Pane selector
         #[arg(long)]
         pane: String,
-        /// Idle time in seconds
+        /// How long output must remain unchanged (seconds)
         #[arg(long, default_value = "2.0")]
         idle_time: f64,
-        /// Timeout in seconds
+        /// Maximum time to wait before erroring (seconds)
         #[arg(long, default_value = "30.0")]
         timeout: f64,
-        /// Include scrollback in checks
+        /// Include scrollback when checking for changes
         #[arg(long)]
         full: bool,
-        /// Keep focus on pane after waiting
+        /// Keep focus on the pane after waiting
         #[arg(long)]
         no_restore: bool,
     },

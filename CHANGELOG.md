@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - CI workflows now target the renamed plugin crate (`zjctl-zrpc`).
 - `zjctl status` and the `focused` selector now use the active tab’s focused pane (instead of the per-tab focused pane), avoiding ambiguous/random “focused” results when multiple tabs exist.
+- `zjctl help` no longer conflicts with clap’s built-in help subcommand, so it consistently shows the agent-friendly quickstart.
 
 ## [0.1.1] - 2026-01-17
 
