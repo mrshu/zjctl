@@ -13,6 +13,23 @@ status, setup, and pane operations) via a single CLI command.
 - JSON output for automation
 - Action passthrough for `zellij action`
 
+## Why would someone use this?
+
+Zellij is great interactively, but it doesn’t give you a stable “handle” to a pane for scripting.
+`zjctl` adds that missing layer: **pane-addressed operations** you can use from scripts, CI, or
+agents, without relying on brittle keybindings or “the currently focused pane”.
+
+Common reasons:
+
+- **Repeatable workflows**: open a layout, start services, tail logs, and tear everything down.
+- **Automation + introspection**: run commands in a pane, `wait-idle`, then `capture` output for parsing.
+- **Agent-friendly control**: let an LLM drive Zellij by selectors (id/title/regex) instead of keystrokes.
+- **Safe orchestration**: selectors + refusal to close focused panes (unless `--force`) reduce footguns.
+- **Glue for existing tools**: spawn `fzf`, `rg`, test runners, REPLs, etc. in dedicated panes and drive them.
+
+If you’ve ever wanted “tmux-style scripting” for Zellij panes (with reliable targeting and output
+capture), that’s the core value.
+
 ## Getting started
 
 ```bash
