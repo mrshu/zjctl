@@ -7,15 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-01-28
+
 ### Added
 - Cargo aliases: `cargo build-plugin` and `cargo install-plugin` to ensure `zjctl-zrpc` is built for `wasm32-wasip1`.
 - README “Why would someone use this?” section to clarify use-cases and value proposition.
 - README now presents Installation before Getting started.
 - `zjctl doctor` now prints the `zjctl` version (and includes it in `--json` output).
+- Workspace `default-members` now excludes the WASI-only plugin crate, so `cargo build` works out of the box.
 
 ### Fixed
 - Building `zjctl-zrpc` for a non-WASI target now fails fast with a clear error message (instead of a linker error).
 - CI now checks `zjctl-zrpc` with the correct `wasm32-wasip1` target.
+- `zjctl pane send` no longer duplicates input to a single pane by accidentally broadcasting the same RPC request to multiple plugin instances.
+- Zellij invocations now consistently target the current session (via `--session $ZELLIJ_SESSION_NAME`) when available.
 
 ## [0.1.2] - 2026-01-26
 
@@ -50,7 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pane selectors, pane operations, and JSON output for automation.
 - `install` and `doctor` setup helpers.
 
-[Unreleased]: https://github.com/mrshu/zjctl/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/mrshu/zjctl/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/mrshu/zjctl/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mrshu/zjctl/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mrshu/zjctl/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mrshu/zjctl/releases/tag/v0.1.0
