@@ -6,6 +6,7 @@ use clap::{ArgAction, Parser, Subcommand};
 
 mod client;
 mod commands;
+mod zellij;
 
 const HELP_AFTER: &str = r#"Quickstart:
   # Install + verify the plugin
@@ -81,8 +82,10 @@ const HELP_QUICKSTART: &str = r#"Quickstart:
   zjctl pane send --pane "$pane" -- "ls -la\n"
 
   # Wait for output, capture it, then close the pane
-  # `wait-idle` polls rendered output until it stops changing for `--idle-time`
-  # seconds (it restores your previous focus by default; use --no-restore to keep focus).
+  # `wait-idle` repeatedly captures the pane’s rendered screen and returns once it
+  # stops changing for `--idle-time` seconds (or errors after `--timeout`).
+  # It focuses the pane while checking; by default it restores your previous focus
+  # (use --no-restore to keep focus on the pane).
   zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
 
   zjctl pane capture --pane "$pane"
@@ -127,10 +130,12 @@ const PANE_CAPTURE_HELP: &str = r#"Examples:
 "#;
 
 const PANE_WAIT_HELP: &str = r#"What it does:
-  `wait-idle` watches a pane’s output and returns once it stops changing for at
-  least `--idle-time` seconds (or errors after `--timeout`). It focuses the pane
-  while checking; by default it restores your previous focus (use `--no-restore`
-  to keep focus on the pane).
+  `wait-idle` watches what’s *rendered* in a pane (not the process state).
+  It repeatedly captures the pane’s screen and returns once it stops changing for
+  at least `--idle-time` seconds (or errors after `--timeout`).
+
+  It focuses the pane while checking; by default it restores your previous focus
+  (use `--no-restore` to keep focus on the pane).
 
 Examples:
   # After sending a command, wait until output settles
