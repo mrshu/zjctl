@@ -30,23 +30,6 @@ Common reasons:
 If you’ve ever wanted “tmux-style scripting” for Zellij panes (with reliable targeting and output
 capture), that’s the core value.
 
-## Getting started
-
-```bash
-# 1) Install + verify the plugin
-zjctl install --load
-zjctl doctor
-
-# 2) Launch a shell pane and run a command
-pane=$(zjctl pane launch -- "zsh")
-zjctl pane send --pane "$pane" -- "ls -la\n"
-
-# 3) Wait, capture, and clean up
-zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
-zjctl pane capture --pane "$pane"
-zjctl pane close --pane "$pane"
-```
-
 ## Installation
 
 Requires Zellij 0.43+.
@@ -96,6 +79,23 @@ Verify setup:
 ```bash
 zjctl doctor
 zjctl doctor --json
+```
+
+## Getting started
+
+```bash
+# 1) Install + verify the plugin
+zjctl install --load
+zjctl doctor
+
+# 2) Launch a shell pane and run a command
+pane=$(zjctl pane launch -- "zsh")
+zjctl pane send --pane "$pane" -- "ls -la\n"
+
+# 3) Wait, capture, and clean up
+zjctl pane wait-idle --pane "$pane" --idle-time 2 --timeout 30
+zjctl pane capture --pane "$pane"
+zjctl pane close --pane "$pane"
 ```
 
 ### From source (optional)

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Cargo aliases: `cargo build-plugin` and `cargo install-plugin` to ensure `zjctl-zrpc` is built for `wasm32-wasip1`.
 - README “Why would someone use this?” section to clarify use-cases and value proposition.
+- README now presents Installation before Getting started.
 
 ### Fixed
 - Building `zjctl-zrpc` for a non-WASI target now fails fast with a clear error message (instead of a linker error).
