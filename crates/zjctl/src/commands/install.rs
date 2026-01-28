@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::client;
+use crate::zellij;
 
 pub fn run(
     plugin: Option<&str>,
@@ -50,7 +51,7 @@ pub fn run(
 
     if load {
         let launch_url = client::plugin_launch_url(plugin_url, Some(&plugin_path));
-        let status = Command::new("zellij")
+        let status = zellij::command()
             .args(["action", "launch-plugin", &launch_url])
             .status()
             .map_err(|err| format!("failed to run zellij: {err}"))?;

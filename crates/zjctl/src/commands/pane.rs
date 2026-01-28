@@ -7,11 +7,12 @@ use std::fs;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use zjctl_proto::methods;
 use zjctl_proto::{PaneSelector, PaneType};
+
+use crate::zellij;
 
 pub fn send(
     plugin: Option<&str>,
@@ -451,13 +452,35 @@ pub fn launch(
     options: LaunchOptions<'_>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let before = panes::list(plugin)?;
+    let focused_tab_index = before.iter().find(|p| p.focused).map(|p| p.tab_index);
+    let before_max_terminal_id = before
+        .iter()
+        .filter_map(|p| parse_terminal_id(&p.id))
+        .max()
+        .unwrap_or(0);
 
     run_new_pane_action(&options)?;
 
-    let after = panes::list(plugin)?;
-    let pane = find_new_pane(&before, &after).map_err(|err| {
-        format!("unable to identify new pane ({err}); run `zjctl panes ls` to inspect")
-    })?;
+    let start = Instant::now();
+    let timeout = Duration::from_secs(180);
+    let interval = Duration::from_millis(50);
+
+    let pane = loop {
+        let after = panes::list(plugin)?;
+        if let Some(pane) =
+            find_new_terminal_pane(&after, focused_tab_index, &options, before_max_terminal_id)
+        {
+            break pane;
+        }
+
+        if start.elapsed() >= timeout {
+            return Err(
+                "unable to identify new pane (no new panes detected); run `zjctl panes ls` to inspect"
+                    .into(),
+            );
+        }
+        sleep(interval);
+    };
 
     if let Some(selector) = pane_id_to_selector(&pane.id) {
         println!("{selector}");
@@ -466,6 +489,46 @@ pub fn launch(
     }
 
     Ok(())
+}
+
+fn find_new_terminal_pane(
+    panes: &[panes::PaneInfo],
+    focused_tab_index: Option<usize>,
+    options: &LaunchOptions<'_>,
+    before_max_terminal_id: u32,
+) -> Option<panes::PaneInfo> {
+    let mut candidates: Vec<panes::PaneInfo> = panes
+        .iter()
+        .filter(|p| p.pane_type == "terminal" && !p.suppressed)
+        .filter(|p| parse_terminal_id(&p.id).is_some_and(|id| id > before_max_terminal_id))
+        .cloned()
+        .collect();
+
+    if options.floating {
+        candidates.retain(|p| p.floating);
+    }
+    if let Some(tab) = focused_tab_index {
+        candidates.retain(|p| p.tab_index == tab);
+    }
+    if let Some(name) = options.name {
+        candidates.retain(|p| p.title.contains(name));
+    }
+
+    candidates.sort_by_key(|p| parse_terminal_id(&p.id).unwrap_or(0));
+    candidates.pop()
+}
+
+fn parse_terminal_id(id: &str) -> Option<u32> {
+    let mut parts = id.split(':');
+    let pane_type = parts.next()?;
+    let numeric = parts.next()?;
+    if parts.next().is_some() {
+        return None;
+    }
+    if pane_type != "terminal" {
+        return None;
+    }
+    numeric.parse().ok()
 }
 
 fn send_raw(
@@ -485,7 +548,7 @@ fn send_raw(
 }
 
 fn run_close_pane_action() -> Result<(), Box<dyn std::error::Error>> {
-    let status = Command::new("zellij")
+    let status = zellij::command()
         .args(["action", "close-pane"])
         .status()
         .map_err(|err| format!("failed to run zellij: {err}"))?;
@@ -527,8 +590,12 @@ fn build_send_steps(
 }
 
 fn run_new_pane_action(options: &LaunchOptions<'_>) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::new("zellij");
-    cmd.args(["action", "new-pane"]);
+    let mut cmd = zellij::command();
+    if options.command.is_empty() {
+        cmd.args(["action", "new-pane"]);
+    } else {
+        cmd.arg("run");
+    }
 
     if let Some(direction) = options.direction {
         cmd.args(["--direction", direction]);
@@ -551,7 +618,13 @@ fn run_new_pane_action(options: &LaunchOptions<'_>) -> Result<(), Box<dyn std::e
     if options.start_suspended {
         cmd.arg("--start-suspended");
     }
-    if !options.command.is_empty() {
+    if options.command.is_empty() {
+        // `zellij action new-pane` only accepts a command after `--`.
+        // When no command is provided, it opens a new pane with Zellij's default shell.
+        //
+        // When a command *is* provided, we prefer `zellij run` because it tends to be more
+        // responsive than the `action new-pane` path in some sessions.
+    } else {
         cmd.arg("--").args(options.command);
     }
 
@@ -565,6 +638,7 @@ fn run_new_pane_action(options: &LaunchOptions<'_>) -> Result<(), Box<dyn std::e
     }
 }
 
+#[cfg(test)]
 fn find_new_pane(
     before: &[panes::PaneInfo],
     after: &[panes::PaneInfo],
@@ -640,7 +714,7 @@ fn dump_screen(full: bool) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 }
 
 fn run_dump_screen(path: &Path, full: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::new("zellij");
+    let mut cmd = zellij::command();
     cmd.args(["action", "dump-screen"])
         .arg(path)
         .stdin(std::process::Stdio::null())

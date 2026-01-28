@@ -2,9 +2,11 @@
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use thiserror::Error;
 use zjctl_proto::{RpcRequest, RpcResponse};
+
+use crate::zellij;
 
 #[derive(Debug, Error)]
 pub enum ClientError {
@@ -44,6 +46,18 @@ pub fn default_plugin_url() -> String {
 pub const DEFAULT_PLUGIN_DOWNLOAD_URL: &str =
     "https://github.com/mrshu/zjctl/releases/latest/download/zrpc.wasm";
 
+fn pipe_plugin_configuration() -> String {
+    let session = std::env::var("ZELLIJ_SESSION_NAME").unwrap_or_else(|_| "unknown".to_string());
+    let sanitized = session
+        .chars()
+        .map(|c| match c {
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '.' => c,
+            _ => '_',
+        })
+        .collect::<String>();
+    format!("zjctl_session={sanitized}")
+}
+
 pub fn default_plugin_path() -> PathBuf {
     let rel = Path::new("zellij").join("plugins").join("zrpc.wasm");
 
@@ -72,6 +86,7 @@ pub fn call(request: &RpcRequest, plugin_path: Option<&str>) -> Result<RpcRespon
     let default_url = default_plugin_url();
     let plugin_url = plugin_path.unwrap_or(default_url.as_str());
     let request_json = serde_json::to_string(request)?;
+    let plugin_configuration = pipe_plugin_configuration();
 
     if let Some(path) = plugin_file_path(plugin_url) {
         if !path.is_file() {
@@ -88,8 +103,16 @@ pub fn call(request: &RpcRequest, plugin_path: Option<&str>) -> Result<RpcRespon
 
     // Use zellij pipe to send message to plugin
     // The plugin name in the pipe message will match the payload we send
-    let mut child = Command::new("zellij")
-        .args(["pipe", "--plugin", plugin_url, "--name", "zjctl-rpc"])
+    let mut child = zellij::command()
+        .args([
+            "pipe",
+            "--plugin",
+            plugin_url,
+            "--plugin-configuration",
+            plugin_configuration.as_str(),
+            "--name",
+            "zjctl-rpc",
+        ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

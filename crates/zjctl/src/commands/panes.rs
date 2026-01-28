@@ -2,6 +2,7 @@
 
 use crate::client;
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 use zjctl_proto::methods;
 
 /// Pane info returned from list
@@ -23,6 +24,38 @@ pub struct PaneInfo {
 }
 
 pub fn list(plugin: Option<&str>) -> Result<Vec<PaneInfo>, Box<dyn std::error::Error>> {
+    // When zrpc is auto-launched via `zellij pipe`, it can receive the pipe message before it has
+    // processed its first PaneUpdate. In that window, panes.list can return an incomplete snapshot.
+    // We poll briefly until the pane IDs stabilize.
+    let start = Instant::now();
+    let timeout = Duration::from_millis(500);
+    let interval = Duration::from_millis(50);
+
+    let mut panes = list_once(plugin)?;
+    let mut ids: Vec<String> = panes.iter().map(|p| p.id.clone()).collect();
+    ids.sort();
+
+    loop {
+        if start.elapsed() >= timeout {
+            return Ok(panes);
+        }
+
+        std::thread::sleep(interval);
+
+        let next = list_once(plugin)?;
+        let mut next_ids: Vec<String> = next.iter().map(|p| p.id.clone()).collect();
+        next_ids.sort();
+
+        if next_ids == ids {
+            return Ok(next);
+        }
+
+        panes = next;
+        ids = next_ids;
+    }
+}
+
+fn list_once(plugin: Option<&str>) -> Result<Vec<PaneInfo>, Box<dyn std::error::Error>> {
     let result = client::rpc_call(plugin, methods::PANES_LIST, serde_json::json!({}))?;
     let panes: Vec<PaneInfo> = serde_json::from_value(result)?;
     Ok(panes)
