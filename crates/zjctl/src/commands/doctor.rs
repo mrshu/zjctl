@@ -9,6 +9,7 @@ use zjctl_proto::methods;
 #[derive(Serialize)]
 struct DoctorReport {
     ok: bool,
+    zjctl_version: String,
     plugin_url: String,
     plugin_path: Option<String>,
     checks: Vec<CheckReport>,
@@ -49,6 +50,7 @@ fn push_check(
 }
 
 pub fn run(plugin: Option<&str>, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let zjctl_version = env!("CARGO_PKG_VERSION").to_string();
     let default_url = client::default_plugin_url();
     let plugin_url = plugin.unwrap_or(default_url.as_str()).to_string();
     let plugin_path = client::plugin_file_path(&plugin_url);
@@ -272,6 +274,7 @@ pub fn run(plugin: Option<&str>, json: bool) -> Result<(), Box<dyn std::error::E
     if json {
         let report = DoctorReport {
             ok,
+            zjctl_version: zjctl_version.clone(),
             plugin_url: plugin_url.clone(),
             plugin_path: plugin_path_display,
             checks: checks
@@ -286,7 +289,7 @@ pub fn run(plugin: Option<&str>, json: bool) -> Result<(), Box<dyn std::error::E
         };
         println!("{}", serde_json::to_string_pretty(&report)?);
     } else {
-        println!("zjctl doctor");
+        println!("zjctl doctor v{zjctl_version}");
         println!("============");
         println!("plugin url: {plugin_url}");
         if let Some(path) = &plugin_path_display {
