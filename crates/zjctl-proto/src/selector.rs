@@ -206,6 +206,30 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_id_terminal_leading_zeroes() {
+        let sel: PaneSelector = "id:terminal:0007".parse().unwrap();
+        match sel {
+            PaneSelector::Id { pane_type, id } => {
+                assert_eq!(pane_type, PaneType::Terminal);
+                assert_eq!(id, 7);
+            }
+            _ => panic!("expected Id selector"),
+        }
+    }
+
+    #[test]
+    fn test_parse_id_invalid_format() {
+        let err = "id:terminal".parse::<PaneSelector>().unwrap_err();
+        assert!(matches!(err, SelectorError::InvalidFormat(_)));
+    }
+
+    #[test]
+    fn test_parse_id_invalid_numeric() {
+        let err = "id:terminal:4a".parse::<PaneSelector>().unwrap_err();
+        assert!(matches!(err, SelectorError::InvalidPaneId(_)));
+    }
+
+    #[test]
     fn test_parse_id_plugin() {
         let sel: PaneSelector = "id:plugin:7".parse().unwrap();
         match sel {

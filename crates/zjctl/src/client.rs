@@ -48,6 +48,10 @@ pub const DEFAULT_PLUGIN_DOWNLOAD_URL: &str =
 
 fn pipe_plugin_configuration() -> String {
     let session = std::env::var("ZELLIJ_SESSION_NAME").unwrap_or_else(|_| "unknown".to_string());
+    pipe_plugin_configuration_for(&session)
+}
+
+fn pipe_plugin_configuration_for(session: &str) -> String {
     let sanitized = session
         .chars()
         .map(|c| match c {
@@ -322,5 +326,11 @@ mod tests {
         let (_, download_cmd, launch_cmd) = plugin_install_commands("file:/tmp/zrpc.wasm", path);
         assert!(download_cmd.contains(DEFAULT_PLUGIN_DOWNLOAD_URL));
         assert!(launch_cmd.contains("zellij action launch-plugin"));
+    }
+
+    #[test]
+    fn pipe_plugin_configuration_sanitizes_session() {
+        let config = pipe_plugin_configuration_for("weird/session name!");
+        assert_eq!(config, "zjctl_session=weird_session_name_");
     }
 }

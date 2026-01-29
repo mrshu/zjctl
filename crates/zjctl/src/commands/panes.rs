@@ -32,8 +32,7 @@ pub fn list(plugin: Option<&str>) -> Result<Vec<PaneInfo>, Box<dyn std::error::E
     let interval = Duration::from_millis(50);
 
     let mut panes = list_once(plugin)?;
-    let mut ids: Vec<String> = panes.iter().map(|p| p.id.clone()).collect();
-    ids.sort();
+    let mut ids = pane_ids(&panes);
 
     loop {
         if start.elapsed() >= timeout {
@@ -43,8 +42,7 @@ pub fn list(plugin: Option<&str>) -> Result<Vec<PaneInfo>, Box<dyn std::error::E
         std::thread::sleep(interval);
 
         let next = list_once(plugin)?;
-        let mut next_ids: Vec<String> = next.iter().map(|p| p.id.clone()).collect();
-        next_ids.sort();
+        let next_ids = pane_ids(&next);
 
         if next_ids == ids {
             return Ok(next);
@@ -59,6 +57,12 @@ fn list_once(plugin: Option<&str>) -> Result<Vec<PaneInfo>, Box<dyn std::error::
     let result = client::rpc_call(plugin, methods::PANES_LIST, serde_json::json!({}))?;
     let panes: Vec<PaneInfo> = serde_json::from_value(result)?;
     Ok(panes)
+}
+
+fn pane_ids(panes: &[PaneInfo]) -> Vec<String> {
+    let mut ids: Vec<String> = panes.iter().map(|p| p.id.clone()).collect();
+    ids.sort();
+    ids
 }
 
 pub fn ls(plugin: Option<&str>, json: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -108,5 +112,46 @@ pub fn truncate(s: &str, max: usize) -> String {
         s.to_string()
     } else {
         format!("{}...", &s[..max - 3])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pane(id: &str) -> PaneInfo {
+        PaneInfo {
+            id: id.to_string(),
+            pane_type: "terminal".to_string(),
+            title: String::new(),
+            command: None,
+            tab_index: 0,
+            tab_name: "tab".to_string(),
+            focused: false,
+            floating: false,
+            suppressed: false,
+            rows: 0,
+            cols: 0,
+        }
+    }
+
+    #[test]
+    fn pane_ids_sort_ids() {
+        let panes = vec![pane("terminal:2"), pane("terminal:10"), pane("terminal:1")];
+        assert_eq!(
+            pane_ids(&panes),
+            vec![
+                "terminal:1".to_string(),
+                "terminal:10".to_string(),
+                "terminal:2".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn pane_ids_same_when_order_changes() {
+        let a = vec![pane("terminal:1"), pane("terminal:2")];
+        let b = vec![pane("terminal:2"), pane("terminal:1")];
+        assert_eq!(pane_ids(&a), pane_ids(&b));
     }
 }
