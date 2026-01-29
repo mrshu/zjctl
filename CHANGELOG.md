@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Opt-in integration test for `pane send` (requires a live Zellij session via `ZJCTL_INTEGRATION=1`).
+
 ## [0.1.3] - 2026-01-28
 
 ### Added
