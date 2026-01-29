@@ -266,6 +266,16 @@ cargo fmt
 cargo clippy
 ```
 
+### Integration tests (local only)
+
+Some tests require a live Zellij session. To run them locally:
+
+```bash
+export ZELLIJ_SESSION_NAME="$(zellij list-sessions | head -n1 | awk '{print $1}')"
+export ZJCTL_INTEGRATION=1
+cargo test -p zjctl --test zellij_integration
+```
+
 ## License
 
 MIT
