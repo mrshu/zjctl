@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Opt-in integration test for `pane send` (requires a live Zellij session via `ZJCTL_INTEGRATION=1`).
 - Unit tests for session scoping, plugin configuration sanitization, and selector edge cases.
 - README note for running integration tests locally.
+- README analogy: "zjctl is to Zellij what Playwright is to the web".
 
 ## [0.1.3] - 2026-01-28
 

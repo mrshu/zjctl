@@ -2,6 +2,8 @@
 
 Programmatic Zellij automation for humans, scripts, and agents alike.
 
+`zjctl` is to Zellij what Playwright is to the web: a reliable, programmable way to control it.
+
 `zjctl` is a CLI + plugin that lets you script Zellij end-to-end (actions,
 status, setup, and pane operations) via a single CLI command.
 
